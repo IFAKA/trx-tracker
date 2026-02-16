@@ -75,7 +75,7 @@ export function RestTimer({ seconds, onSkip, onQuit }: RestTimerProps) {
         variant="ghost"
         size="lg"
         onClick={onSkip}
-        className="rounded-full w-16 h-16"
+        className="rounded-full w-16 h-16 active:scale-95 transition-transform"
       >
         <SkipForward className="w-8 h-8" />
       </Button>

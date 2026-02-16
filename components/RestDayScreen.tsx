@@ -49,7 +49,7 @@ export function RestDayScreen({ nextTraining, weekCompleted, weekTotal }: RestDa
       <Button
         size="lg"
         onClick={mobility.startMobility}
-        className="rounded-full w-16 h-16"
+        className="rounded-full w-16 h-16 animate-pulse active:scale-95 transition-transform"
       >
         <Play className="w-8 h-8" />
       </Button>

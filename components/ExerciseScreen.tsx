@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { EXERCISES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { ExerciseIllustration } from '@/components/exercise-illustrations';
 
 interface ExerciseScreenProps {
   exerciseIndex: number;
@@ -93,9 +94,12 @@ export function ExerciseScreen({
             <span>{showInstruction ? 'hide' : 'how to'}</span>
           </button>
           {showInstruction && (
-            <p className="text-sm text-muted-foreground text-center max-w-[280px] leading-relaxed">
-              {exercise.instruction}
-            </p>
+            <>
+              <ExerciseIllustration exerciseKey={exercise.key} />
+              <p className="text-sm text-muted-foreground text-center max-w-[280px] leading-relaxed">
+                {exercise.instruction}
+              </p>
+            </>
           )}
         </div>
 
@@ -103,7 +107,7 @@ export function ExerciseScreen({
         <div className="flex gap-2">
           {Array.from({ length: setsPerExercise }).map((_, i) => (
             <div
-              key={i}
+              key={i === currentSet - 1 ? `dot-${i}-${currentSet}` : i}
               className={cn(
                 'w-3 h-3 rounded-full transition-colors',
                 i < currentSet
@@ -112,6 +116,11 @@ export function ExerciseScreen({
                     ? 'border-2 border-foreground'
                     : 'border border-muted-foreground/40'
               )}
+              style={
+                i === currentSet - 1 && currentSet > 0
+                  ? { animation: 'dot-pop 400ms ease-out' }
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -151,7 +160,7 @@ export function ExerciseScreen({
             size="lg"
             onClick={handleSubmit}
             disabled={inputValue === ''}
-            className="rounded-full w-14 h-14"
+            className="rounded-full w-14 h-14 active:scale-95 transition-transform"
           >
             <Check className="w-7 h-7" />
           </Button>
@@ -176,9 +185,15 @@ export function ExerciseScreen({
       {flashColor && (
         <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
           {flashColor === 'green' ? (
-            <TrendingUp className="w-24 h-24 text-green-500 animate-ping" />
+            <TrendingUp
+              className="w-24 h-24 text-green-500"
+              style={{ animation: 'feedback-pop 600ms ease-out forwards' }}
+            />
           ) : (
-            <TrendingDown className="w-24 h-24 text-red-500 animate-ping" />
+            <TrendingDown
+              className="w-24 h-24 text-red-500"
+              style={{ animation: 'feedback-pop 600ms ease-out forwards' }}
+            />
           )}
         </div>
       )}

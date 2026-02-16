@@ -132,12 +132,18 @@ function TodayContent({ date }: { date: Date }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-8">
       <div className="flex flex-col items-center gap-3">
-        <Dumbbell className="w-10 h-10" />
+        <Dumbbell
+          className="w-10 h-10"
+          style={{ animation: 'bounce-in 600ms ease-out backwards' }}
+        />
         <h1 className="text-2xl font-bold tracking-tight">TRAINING</h1>
         <p className="text-sm text-muted-foreground">{formatDisplayDate(date)}</p>
       </div>
 
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div
+        className="flex items-center gap-2 text-sm text-muted-foreground"
+        style={{ animation: 'stagger-in 400ms ease-out 200ms backwards' }}
+      >
         <span className="font-mono">WEEK {weekNumber}</span>
         <span>·</span>
         <span className="font-mono">{workout.setsPerExercise} SETS</span>
@@ -146,7 +152,7 @@ function TodayContent({ date }: { date: Date }) {
       <Button
         size="lg"
         onClick={workout.startWorkout}
-        className="rounded-full w-20 h-20"
+        className="rounded-full w-20 h-20 animate-pulse active:scale-95 transition-transform"
       >
         <Play className="w-10 h-10" />
       </Button>

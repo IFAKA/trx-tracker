@@ -1,13 +1,48 @@
 import { Exercise, MobilityExercise, MicroBreakExercise } from './types';
 
 export const EXERCISES: Exercise[] = [
-  { key: 'inverted_row', name: 'TRX INVERTED ROW', unit: 'reps' },
-  { key: 'single_arm_row', name: 'TRX SINGLE-ARM ROW', unit: 'reps' },
-  { key: 'pike_pushup', name: 'TRX PIKE PUSH-UP', unit: 'reps' },
-  { key: 'face_pull', name: 'TRX FACE PULL', unit: 'reps' },
-  { key: 'pushup', name: 'PUSH-UPS', unit: 'reps' },
-  { key: 'wall_lateral_raise', name: 'WALL LATERAL RAISE', unit: 'reps' },
-  { key: 'plank', name: 'TRX PLANK', unit: 'seconds' },
+  {
+    key: 'inverted_row',
+    name: 'TRX INVERTED ROW',
+    unit: 'reps',
+    instruction: 'Hang under TRX, body straight. Pull chest to handles, squeeze shoulder blades. Lower with control.',
+  },
+  {
+    key: 'single_arm_row',
+    name: 'TRX SINGLE-ARM ROW',
+    unit: 'reps',
+    instruction: 'One hand on TRX, other arm free. Pull chest to handle, rotate slightly. Do all reps then switch.',
+  },
+  {
+    key: 'pike_pushup',
+    name: 'TRX PIKE PUSH-UP',
+    unit: 'reps',
+    instruction: 'Feet in TRX cradles, pike hips up. Bend elbows, lower head toward floor. Press back up.',
+  },
+  {
+    key: 'face_pull',
+    name: 'TRX FACE PULL',
+    unit: 'reps',
+    instruction: 'Lean back holding TRX. Pull handles to face, elbows high and wide. Squeeze rear delts.',
+  },
+  {
+    key: 'pushup',
+    name: 'PUSH-UPS',
+    unit: 'reps',
+    instruction: 'Hands shoulder-width, body straight. Lower chest to floor, elbows at 45°. Push back up.',
+  },
+  {
+    key: 'wall_lateral_raise',
+    name: 'WALL LATERAL RAISE',
+    unit: 'reps',
+    instruction: 'Stand with back flat against wall. Raise arms to sides up to shoulder height. Lower slowly.',
+  },
+  {
+    key: 'plank',
+    name: 'TRX PLANK',
+    unit: 'seconds',
+    instruction: 'Feet in TRX cradles, forearms on floor. Keep body straight, core tight. Hold position.',
+  },
 ];
 
 export const STORAGE_KEY = 'trx_tracker_sessions';
