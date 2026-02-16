@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Target, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Target, TrendingUp, TrendingDown, Minus, Info, X, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { EXERCISES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -15,6 +16,7 @@ interface ExerciseScreenProps {
   previousRep: number | null;
   flashColor: 'green' | 'red' | null;
   onLogSet: (value: number) => void;
+  onQuit: () => void;
 }
 
 export function ExerciseScreen({
@@ -25,14 +27,17 @@ export function ExerciseScreen({
   previousRep,
   flashColor,
   onLogSet,
+  onQuit,
 }: ExerciseScreenProps) {
   const [inputValue, setInputValue] = useState('');
+  const [showInstruction, setShowInstruction] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const exercise = EXERCISES[exerciseIndex];
   const progressPercent = ((exerciseIndex) / EXERCISES.length) * 100;
 
   useEffect(() => {
     setInputValue('');
+    setShowInstruction(false);
     // Focus input on mount and exercise/set change
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [exerciseIndex, currentSet]);
@@ -56,8 +61,16 @@ export function ExerciseScreen({
         flashColor === 'red' && 'bg-red-950/30'
       )}
     >
-      {/* Progress bar */}
+      {/* Top bar */}
       <div className="flex items-center gap-3 mb-2">
+        <button
+          type="button"
+          onClick={onQuit}
+          className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Quit workout"
+        >
+          <X className="w-5 h-5" />
+        </button>
         <Progress value={progressPercent} className="flex-1 h-1.5" />
         <span className="text-xs text-muted-foreground font-mono">
           {exerciseIndex + 1}/{EXERCISES.length}
@@ -66,10 +79,25 @@ export function ExerciseScreen({
 
       {/* Main content */}
       <div className="flex-1 flex flex-col items-center justify-center gap-8">
-        {/* Exercise name */}
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center">
-          {exercise.name}
-        </h1>
+        {/* Exercise name + info */}
+        <div className="flex flex-col items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center font-[family-name:var(--font-geist-sans)]">
+            {exercise.name}
+          </h1>
+          <button
+            type="button"
+            onClick={() => setShowInstruction(!showInstruction)}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground/80 hover:text-foreground transition-colors border border-muted-foreground/30 rounded-full px-3 py-1"
+          >
+            <Info className="w-3.5 h-3.5" />
+            <span>{showInstruction ? 'hide' : 'how to'}</span>
+          </button>
+          {showInstruction && (
+            <p className="text-sm text-muted-foreground text-center max-w-[280px] leading-relaxed">
+              {exercise.instruction}
+            </p>
+          )}
+        </div>
 
         {/* Set dots */}
         <div className="flex gap-2">
@@ -103,7 +131,7 @@ export function ExerciseScreen({
         </div>
 
         {/* Input */}
-        <div className="flex flex-col items-center gap-1 w-32">
+        <div className="flex flex-col items-center gap-3 w-40">
           <span className="text-xs uppercase tracking-widest text-muted-foreground">
             {exercise.unit === 'seconds' ? 'Seconds held' : 'Reps done'}
           </span>
@@ -119,6 +147,14 @@ export function ExerciseScreen({
             placeholder="0"
             min={0}
           />
+          <Button
+            size="lg"
+            onClick={handleSubmit}
+            disabled={inputValue === ''}
+            className="rounded-full w-14 h-14"
+          >
+            <Check className="w-7 h-7" />
+          </Button>
         </div>
 
         {/* Previous performance */}

@@ -35,6 +35,10 @@ export function SessionComplete({ sessionReps, data, date }: SessionCompleteProp
 
       {/* Summary */}
       <div className="w-full max-w-sm space-y-2">
+        <div className="flex items-center justify-between px-4 text-xs text-muted-foreground uppercase tracking-widest">
+          <span>Exercise</span>
+          <span>Sets</span>
+        </div>
         {EXERCISES.map((ex) => {
           const reps = sessionReps[ex.key] || data[dateKey]?.[ex.key];
           if (!reps) return null;
@@ -49,7 +53,7 @@ export function SessionComplete({ sessionReps, data, date }: SessionCompleteProp
           return (
             <Card key={ex.key} className="bg-card/50">
               <CardContent className="flex items-center justify-between py-3 px-4">
-                <span className="text-sm font-medium truncate flex-1">
+                <span className="text-sm font-medium truncate flex-1 font-[family-name:var(--font-geist-sans)]">
                   {ex.name}
                 </span>
                 <div className="flex items-center gap-2">
@@ -81,7 +85,7 @@ export function SessionComplete({ sessionReps, data, date }: SessionCompleteProp
           className="flex-1 h-2"
         />
         <span className="text-sm font-mono text-muted-foreground">
-          {weekProgress.completed}/{weekProgress.total}
+          {weekProgress.completed}/{weekProgress.total} this week
         </span>
       </div>
     </div>

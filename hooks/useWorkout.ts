@@ -225,6 +225,18 @@ export function useWorkout(date: Date) {
     advanceAfterRest();
   }, [advanceAfterRest]);
 
+  const quitWorkout = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setState('idle');
+    setExerciseIndex(0);
+    setCurrentSet(0);
+    setSessionReps({});
+    releaseWakeLock();
+  }, [releaseWakeLock]);
+
   const refreshData = useCallback(() => {
     setData(loadWorkoutData());
   }, []);
@@ -245,6 +257,7 @@ export function useWorkout(date: Date) {
     startWorkout,
     logSet,
     skipTimer,
+    quitWorkout,
     refreshData,
   };
 }

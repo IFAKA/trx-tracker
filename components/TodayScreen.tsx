@@ -59,12 +59,16 @@ function TodayContent({ date }: { date: Date }) {
 
         {/* Quick summary */}
         <div className="w-full max-w-xs space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground/60 uppercase tracking-widest mb-2">
+            <span>Exercise</span>
+            <span>Sets</span>
+          </div>
           {EXERCISES.map((ex) => {
             const reps = session?.[ex.key];
             if (!reps) return null;
             return (
               <div key={ex.key} className="flex justify-between text-sm">
-                <span className="text-muted-foreground truncate">{ex.name}</span>
+                <span className="text-muted-foreground truncate font-[family-name:var(--font-geist-sans)]">{ex.name}</span>
                 <span className="font-mono">
                   {reps.join('·')}
                   {ex.unit === 'seconds' ? 's' : ''}
@@ -77,7 +81,7 @@ function TodayContent({ date }: { date: Date }) {
         <div className="flex items-center gap-2 text-muted-foreground mt-4">
           <Calendar className="w-4 h-4" />
           <span className="text-sm font-mono">
-            {schedule.weekProgress.completed}/{schedule.weekProgress.total}
+            {schedule.weekProgress.completed}/{schedule.weekProgress.total} this week
           </span>
         </div>
       </div>
@@ -95,12 +99,13 @@ function TodayContent({ date }: { date: Date }) {
         previousRep={workout.previousRep}
         flashColor={workout.flashColor}
         onLogSet={workout.logSet}
+        onQuit={workout.quitWorkout}
       />
     );
   }
 
   if (workout.state === 'resting') {
-    return <RestTimer seconds={workout.timer} onSkip={workout.skipTimer} />;
+    return <RestTimer seconds={workout.timer} onSkip={workout.skipTimer} onQuit={workout.quitWorkout} />;
   }
 
   if (workout.state === 'complete') {
@@ -123,7 +128,7 @@ function TodayContent({ date }: { date: Date }) {
       </div>
 
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span className="font-mono">W{weekNumber}</span>
+        <span className="font-mono">WEEK {weekNumber}</span>
         <span>·</span>
         <span className="font-mono">{workout.setsPerExercise} SETS</span>
       </div>
@@ -139,7 +144,7 @@ function TodayContent({ date }: { date: Date }) {
       <div className="flex items-center gap-2 text-muted-foreground">
         <Calendar className="w-4 h-4" />
         <span className="text-sm font-mono">
-          {schedule.weekProgress.completed}/{schedule.weekProgress.total}
+          {schedule.weekProgress.completed}/{schedule.weekProgress.total} this week
         </span>
       </div>
     </div>

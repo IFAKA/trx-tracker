@@ -64,7 +64,7 @@ export function RestDayScreen({ nextTraining, weekCompleted, weekTotal }: RestDa
       <div className="flex items-center gap-2 text-muted-foreground">
         <Calendar className="w-4 h-4" />
         <span className="text-sm font-mono">
-          {weekCompleted}/{weekTotal}
+          {weekCompleted}/{weekTotal} this week
         </span>
       </div>
     </div>

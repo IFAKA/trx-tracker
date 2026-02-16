@@ -1,14 +1,15 @@
 'use client';
 
-import { Timer, SkipForward } from 'lucide-react';
+import { Timer, SkipForward, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface RestTimerProps {
   seconds: number;
   onSkip: () => void;
+  onQuit: () => void;
 }
 
-export function RestTimer({ seconds, onSkip }: RestTimerProps) {
+export function RestTimer({ seconds, onSkip, onQuit }: RestTimerProps) {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   const display = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -16,6 +17,14 @@ export function RestTimer({ seconds, onSkip }: RestTimerProps) {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-8">
+      <button
+        type="button"
+        onClick={onQuit}
+        className="absolute top-6 left-6 p-1 text-muted-foreground hover:text-foreground transition-colors"
+        aria-label="Quit workout"
+      >
+        <X className="w-5 h-5" />
+      </button>
       <Timer className="w-8 h-8 text-muted-foreground" />
 
       <div className="relative w-48 h-48 flex items-center justify-center">
