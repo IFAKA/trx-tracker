@@ -29,6 +29,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     lastBreakEl.textContent = `#${breakIndex}`;
   }
 
+  // Check mic status
+  const micEl = document.getElementById('mic-status');
+  chrome.runtime.sendMessage({ type: 'CHECK_MIC' }, (resp) => {
+    if (chrome.runtime.lastError || !resp) {
+      micEl.textContent = 'N/A';
+      micEl.style.color = '#888';
+    } else if (resp.micActive) {
+      micEl.textContent = 'CALL DETECTED';
+      micEl.classList.add('pending');
+    } else {
+      micEl.textContent = 'CLEAR';
+      micEl.classList.add('done');
+    }
+  });
+
   // Open app
   openBtn.addEventListener('click', () => {
     chrome.tabs.create({ url: 'http://localhost:3000' });

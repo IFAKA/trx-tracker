@@ -3,7 +3,7 @@
   "name": "TRX Tracker",
   "version": "1.0.0",
   "description": "Blocks browsing until workout is logged + hourly micro-breaks",
-  "permissions": ["storage", "alarms", "tabs", "activeTab"],
+  "permissions": ["storage", "alarms", "tabs", "activeTab", "nativeMessaging"],
   "background": {
     "service_worker": "background.js"
   },

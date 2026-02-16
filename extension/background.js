@@ -15,12 +15,61 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // Handle alarms
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === ALARM_MICRO_BREAK) {
+  if (alarm.name === ALARM_MICRO_BREAK || alarm.name === 'trx-mic-retry') {
     triggerMicroBreak();
   }
 });
 
+const NM_HOST = 'com.trx.mic_check';
+const MIC_RETRY_MINUTES = 5;
+
+function checkMicActive() {
+  return new Promise((resolve) => {
+    try {
+      const port = chrome.runtime.connectNative(NM_HOST);
+      let responded = false;
+
+      port.onMessage.addListener((msg) => {
+        responded = true;
+        port.disconnect();
+        resolve(msg.micActive === true);
+      });
+
+      port.onDisconnect.addListener(() => {
+        if (!responded) {
+          console.warn('Native host disconnected:', chrome.runtime.lastError?.message);
+          resolve(false); // If host unavailable, don't block breaks
+        }
+      });
+
+      port.postMessage({ action: 'check' });
+
+      // Timeout fallback — don't block breaks if host hangs
+      setTimeout(() => {
+        if (!responded) {
+          responded = true;
+          try { port.disconnect(); } catch (_) {}
+          resolve(false);
+        }
+      }, 3000);
+    } catch (err) {
+      console.warn('Native messaging error:', err);
+      resolve(false);
+    }
+  });
+}
+
 async function triggerMicroBreak() {
+  // Check if microphone is active (call in progress)
+  const micActive = await checkMicActive();
+  await chrome.storage.local.set({ lastMicCheck: micActive });
+
+  if (micActive) {
+    console.log('Mic active — deferring break by', MIC_RETRY_MINUTES, 'min');
+    chrome.alarms.create('trx-mic-retry', { delayInMinutes: MIC_RETRY_MINUTES });
+    return;
+  }
+
   // Get current break index
   const { breakIndex = 0 } = await chrome.storage.local.get('breakIndex');
 
@@ -70,5 +119,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'CHECK_BLOCK') {
     checkWorkoutBlock().then((blocked) => sendResponse({ blocked }));
     return true; // async response
+  }
+  if (message.type === 'CHECK_MIC') {
+    checkMicActive().then((micActive) => sendResponse({ micActive }));
+    return true;
   }
 });
