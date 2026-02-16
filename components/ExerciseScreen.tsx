@@ -89,18 +89,24 @@ export function ExerciseScreen({
         </div>
 
         {/* Target */}
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Target className="w-5 h-5" />
-          <span className="text-3xl font-mono font-bold text-foreground">
-            {currentTarget}
-          </span>
-          {exercise.unit === 'seconds' && (
-            <span className="text-sm text-muted-foreground">s</span>
-          )}
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">Target</span>
+          <div className="flex items-center gap-2">
+            <Target className="w-5 h-5 text-muted-foreground" />
+            <span className="text-3xl font-mono font-bold text-foreground">
+              {currentTarget}
+            </span>
+            {exercise.unit === 'seconds' && (
+              <span className="text-sm text-muted-foreground">s</span>
+            )}
+          </div>
         </div>
 
         {/* Input */}
-        <div className="w-32">
+        <div className="flex flex-col items-center gap-1 w-32">
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">
+            {exercise.unit === 'seconds' ? 'Seconds held' : 'Reps done'}
+          </span>
           <Input
             ref={inputRef}
             type="number"
@@ -110,7 +116,7 @@ export function ExerciseScreen({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             className="text-center text-4xl font-mono h-16 border-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            placeholder="—"
+            placeholder="0"
             min={0}
           />
         </div>
