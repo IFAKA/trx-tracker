@@ -1,9 +1,10 @@
 'use client';
 
-import { SkipForward, Activity } from 'lucide-react';
+import { SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { MobilityExercise } from '@/lib/types';
+import { ExerciseDemo } from '@/components/ExerciseDemo';
 
 interface MobilityFlowProps {
   exercise: MobilityExercise;
@@ -36,7 +37,9 @@ export function MobilityFlow({
 
       {/* Main content */}
       <div className="flex-1 flex flex-col items-center justify-center gap-6">
-        <Activity className="w-8 h-8 text-muted-foreground" />
+        {exercise.youtubeId && (
+          <ExerciseDemo youtubeId={exercise.youtubeId} title={exercise.name} />
+        )}
 
         <h1 className="text-2xl font-bold tracking-tight text-center">
           {exercise.name}

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Activity } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MicroBreakExercise } from '@/lib/types';
+import { ExerciseDemo } from '@/components/ExerciseDemo';
 
 interface MicroBreakProps {
   exercise: MicroBreakExercise;
@@ -37,7 +38,9 @@ export function MicroBreak({ exercise, onDismiss }: MicroBreakProps) {
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center p-6 gap-6">
-      <Activity className="w-10 h-10 text-muted-foreground" />
+      {exercise.youtubeId && (
+        <ExerciseDemo youtubeId={exercise.youtubeId} title={exercise.name} />
+      )}
 
       <h1 className="text-2xl font-bold tracking-tight">{exercise.name}</h1>
 

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { EXERCISES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
-import { ExerciseIllustration } from '@/components/exercise-illustrations';
+import { ExerciseDemo } from '@/components/ExerciseDemo';
 
 interface ExerciseScreenProps {
   exerciseIndex: number;
@@ -95,7 +95,9 @@ export function ExerciseScreen({
           </button>
           {showInstruction && (
             <>
-              <ExerciseIllustration exerciseKey={exercise.key} />
+              {exercise.youtubeId && (
+                <ExerciseDemo youtubeId={exercise.youtubeId} title={exercise.name} />
+              )}
               <p className="text-sm text-muted-foreground text-center max-w-[280px] leading-relaxed">
                 {exercise.instruction}
               </p>

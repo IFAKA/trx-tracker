@@ -12,6 +12,7 @@ export interface Exercise {
   name: string;
   unit: 'reps' | 'seconds';
   instruction: string;
+  youtubeId?: string;
 }
 
 export type WorkoutSession = {
@@ -43,10 +44,12 @@ export interface MobilityExercise {
   duration: number; // seconds
   sides?: boolean; // if true, duration is per side
   instruction: string;
+  youtubeId?: string;
 }
 
 export interface MicroBreakExercise {
   name: string;
   duration: number;
   instruction: string;
+  youtubeId?: string;
 }
