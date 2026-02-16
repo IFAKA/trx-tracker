@@ -52,7 +52,21 @@ export function RestTimer({ seconds, onSkip, onQuit }: RestTimerProps) {
             style={{ transition: 'stroke-dashoffset 1s linear' }}
           />
         </svg>
-        <span className="text-5xl font-mono font-bold tracking-wider">
+        <span
+          className={`font-mono font-bold tracking-wider transition-colors duration-300 ${
+            seconds <= 3 && seconds > 0
+              ? 'text-yellow-500 text-6xl'
+              : 'text-5xl'
+          }`}
+          style={
+            seconds <= 3 && seconds > 0
+              ? {
+                  animation: 'countdown-pulse 1s ease-out',
+                }
+              : undefined
+          }
+          key={seconds <= 3 ? seconds : 'normal'}
+        >
           {display}
         </span>
       </div>

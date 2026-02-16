@@ -5,6 +5,7 @@ import { Dumbbell, Play, CheckCircle, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExerciseScreen } from './ExerciseScreen';
 import { RestTimer } from './RestTimer';
+import { ExerciseTransition } from './ExerciseTransition';
 import { SessionComplete } from './SessionComplete';
 import { RestDayScreen } from './RestDayScreen';
 import { useWorkout } from '@/hooks/useWorkout';
@@ -100,6 +101,15 @@ function TodayContent({ date }: { date: Date }) {
         flashColor={workout.flashColor}
         onLogSet={workout.logSet}
         onQuit={workout.quitWorkout}
+      />
+    );
+  }
+
+  if (workout.state === 'transitioning') {
+    return (
+      <ExerciseTransition
+        exerciseName={workout.nextExerciseName}
+        onComplete={workout.finishTransition}
       />
     );
   }

@@ -6,6 +6,12 @@ import { EXERCISES, REST_DURATION } from '@/lib/constants';
 import { loadWorkoutData, saveSession, getFirstSessionDate, setFirstSessionDate } from '@/lib/storage';
 import { formatDateKey, getWeekNumber, getSetsForWeek } from '@/lib/workout-utils';
 import { getTargets } from '@/lib/progression';
+import {
+  playSetLogged,
+  playCountdownTick,
+  playRestComplete,
+  playSessionComplete,
+} from '@/lib/audio';
 
 export function useWorkout(date: Date) {
   const [state, setState] = useState<WorkoutState>('idle');
@@ -15,8 +21,10 @@ export function useWorkout(date: Date) {
   const [sessionReps, setSessionReps] = useState<Record<string, number[]>>({});
   const [data, setData] = useState<WorkoutData>(() => loadWorkoutData());
   const [flashColor, setFlashColor] = useState<'green' | 'red' | null>(null);
+  const [nextExerciseName, setNextExerciseName] = useState('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const countdownPlayedRef = useRef<Set<number>>(new Set());
 
   const dateKey = formatDateKey(date);
   const firstSession = getFirstSessionDate();
@@ -69,15 +77,25 @@ export function useWorkout(date: Date) {
   // Timer logic
   useEffect(() => {
     if (state === 'resting' && timer > 0) {
+      // Reset countdown tracking when timer starts fresh
+      if (timer === REST_DURATION) {
+        countdownPlayedRef.current = new Set();
+      }
+
       timerRef.current = setInterval(() => {
         setTimer((t) => {
           if (t <= 1) {
             // Timer done
             clearInterval(timerRef.current!);
             timerRef.current = null;
-            notifyTimerDone();
+            playRestComplete();
             advanceAfterRest();
             return 0;
+          }
+          // Countdown ticks at 3, 2, 1
+          if (t - 1 <= 3 && t - 1 > 0 && !countdownPlayedRef.current.has(t - 1)) {
+            countdownPlayedRef.current.add(t - 1);
+            playCountdownTick(t - 1);
           }
           return t - 1;
         });
@@ -89,27 +107,6 @@ export function useWorkout(date: Date) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, timer === REST_DURATION]);
 
-  const notifyTimerDone = useCallback(() => {
-    // Vibration
-    if ('vibrate' in navigator) {
-      navigator.vibrate([200, 100, 200]);
-    }
-    // Audio beep
-    try {
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 880;
-      gain.gain.value = 0.3;
-      osc.start();
-      osc.stop(ctx.currentTime + 0.2);
-    } catch {
-      // Audio not available
-    }
-  }, []);
-
   const advanceAfterRest = useCallback(() => {
     const nextSet = currentSet + 1;
     if (nextSet < setsPerExercise) {
@@ -119,9 +116,11 @@ export function useWorkout(date: Date) {
       // Next exercise
       const nextExercise = exerciseIndex + 1;
       if (nextExercise < EXERCISES.length) {
+        // Show transition interstitial
+        setNextExerciseName(EXERCISES[nextExercise].name);
         setExerciseIndex(nextExercise);
         setCurrentSet(0);
-        setState('exercising');
+        setState('transitioning');
       } else {
         // Session complete
         completeSession();
@@ -129,6 +128,10 @@ export function useWorkout(date: Date) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSet, setsPerExercise, exerciseIndex]);
+
+  const finishTransition = useCallback(() => {
+    setState('exercising');
+  }, []);
 
   const completeSession = useCallback(() => {
     const session: WorkoutData[string] = {
@@ -144,6 +147,7 @@ export function useWorkout(date: Date) {
     setFirstSessionDate(dateKey);
     setData(loadWorkoutData());
     setState('complete');
+    playSessionComplete();
     releaseWakeLock();
   }, [dateKey, weekNumber, sessionReps, releaseWakeLock]);
 
@@ -162,7 +166,9 @@ export function useWorkout(date: Date) {
 
       // Flash feedback
       const target = currentTarget;
-      setFlashColor(value >= target ? 'green' : 'red');
+      const hitTarget = value >= target;
+      setFlashColor(hitTarget ? 'green' : 'red');
+      playSetLogged(hitTarget);
       setTimeout(() => setFlashColor(null), 600);
 
       setSessionReps((prev) => ({
@@ -195,6 +201,7 @@ export function useWorkout(date: Date) {
           setFirstSessionDate(dateKey);
           setData(loadWorkoutData());
           setState('complete');
+          playSessionComplete();
           releaseWakeLock();
         }, 700);
       } else {
@@ -254,10 +261,12 @@ export function useWorkout(date: Date) {
     sessionReps,
     weekNumber,
     data,
+    nextExerciseName,
     startWorkout,
     logSet,
     skipTimer,
     quitWorkout,
     refreshData,
+    finishTransition,
   };
 }

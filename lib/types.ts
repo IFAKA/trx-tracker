@@ -11,6 +11,7 @@ export interface Exercise {
   key: ExerciseKey;
   name: string;
   unit: 'reps' | 'seconds';
+  instruction: string;
 }
 
 export type WorkoutSession = {
@@ -35,7 +36,7 @@ export interface WeeklyStats {
   vsLastWeek: number | null; // difference in sessions
 }
 
-export type WorkoutState = 'idle' | 'exercising' | 'resting' | 'complete';
+export type WorkoutState = 'idle' | 'exercising' | 'resting' | 'transitioning' | 'complete';
 
 export interface MobilityExercise {
   name: string;
