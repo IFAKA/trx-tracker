@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TRX Tracker
 
-## Getting Started
+A no-excuses workout coach: PWA for guided TRX workouts with progressive overload, paired with a Chrome extension that blocks browsing until you train and enforces hourly micro-break mobility exercises.
 
-First, run the development server:
+## What It Does
+
+**PWA (the app)**
+- Guided TRX workout flow with 7 exercises, set/rep tracking, and rest timers
+- Progressive overload — automatically suggests weight/rep increases
+- Session history and weekly stats
+- Sound cues and haptic feedback
+- Installable on your phone (standalone PWA)
+
+**Chrome Extension**
+- Blocks all browsing on training days until workout is logged
+- Hourly micro-break overlays with mobility exercises (wall slides, thoracic rotation, hip flexor stretch, chest doorway stretch)
+- Auto mic detection — suppresses breaks during calls (Teams, Zoom, etc.) so you don't get embarrassed on screen share
+
+## Setup
+
+### 1. Run the PWA
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). On mobile, use "Add to Home Screen" to install as a standalone app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. Load the Chrome Extension
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Go to `chrome://extensions`
+2. Enable **Developer mode** (top right)
+3. Click **Load unpacked** and select the `extension/` folder
+4. Note your extension ID (shown under the extension name)
 
-## Learn More
+### 3. Set Up Mic Detection (macOS only)
 
-To learn more about Next.js, take a look at the following resources:
+The extension uses a Native Messaging host to detect active microphone usage via CoreAudio. This lets it skip micro-breaks while you're on a call.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+./extension/install-native-host.sh
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Then update the extension ID in the installed manifest:
 
-## Deploy on Vercel
+```bash
+# Open the manifest and replace EXTENSION_ID with your actual ID from step 2
+nano ~/Library/Application\ Support/Google/Chrome/NativeMessagingHosts/com.trx.mic_check.json
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Change `"allowed_origins": ["chrome-extension://EXTENSION_ID/"]` to your actual extension ID.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> If you skip this step, the extension still works — mic detection will just be inactive and all breaks fire normally.
+
+## Project Structure
+
+```
+app/                  # Next.js app (pages, layout, PWA manifest)
+components/           # React components (TodayScreen, ExerciseScreen, RestTimer, etc.)
+hooks/                # Custom hooks (useWorkout, useProgression, useSchedule, etc.)
+lib/                  # Types, constants, utilities
+extension/            # Chrome extension
+  ├── background.js   # Service worker (alarms, workout blocking, mic check)
+  ├── content.js      # Injected UI (block overlay, micro-break overlay)
+  ├── popup/          # Extension popup (status dashboard)
+  ├── native/         # Native Messaging host (CoreAudio mic detection)
+  └── install-native-host.sh
+```
+
+## Tech Stack
+
+- Next.js, React 19, TypeScript, Tailwind CSS
+- Radix UI + shadcn/ui components
+- Recharts (stats), date-fns, Lucide icons
+- Chrome Extension Manifest V3
+- CoreAudio (via Swift) for mic detection
