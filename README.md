@@ -7,7 +7,13 @@ A no-excuses workout tracker with native desktop app (macOS) and mobile PWA that
 ## For Users
 
 **Desktop App (macOS)**
-Download the latest `.dmg` from [Releases](https://github.com/IFAKA/traindaily/releases) → The app's onboarding will guide you through setup.
+1. Download the latest `.dmg` from [Releases](https://github.com/IFAKA/traindaily/releases)
+2. Open the `.dmg` and drag TrainDaily to Applications folder
+3. **First launch:** Right-click TrainDaily.app → Open → Confirm
+   *(macOS Gatekeeper will show a warning since the app isn't from the App Store)*
+4. Grant microphone permission when prompted
+   *(Used to detect calls and skip hourly breaks automatically)*
+5. The app will guide you through onboarding
 
 **Mobile PWA**
 Visit [traindaily.vercel.app](https://traindaily.vercel.app) → Add to home screen for native-like experience.

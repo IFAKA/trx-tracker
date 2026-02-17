@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Dumbbell, Play, CheckCircle, Calendar } from 'lucide-react';
+import { Dumbbell, Play, CheckCircle, Calendar, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 import { ExerciseScreen } from './ExerciseScreen';
 import { RestTimer } from './RestTimer';
 import { ExerciseTransition } from './ExerciseTransition';
 import { SessionComplete } from './SessionComplete';
 import { RestDayScreen } from './RestDayScreen';
+import { Onboarding } from './Onboarding';
 import { useWorkout } from '@/hooks/useWorkout';
 import { useSchedule } from '@/hooks/useSchedule';
 import { useDevTools } from '@/lib/devtools';
@@ -15,18 +17,36 @@ import { formatDisplayDate, getWeekNumber } from '@/lib/workout-utils';
 import { getFirstSessionDate } from '@/lib/storage';
 import { EXERCISES } from '@/lib/constants';
 
+const ONBOARDING_KEY = 'traindaily_onboarding_completed';
+
 export function TodayScreen() {
   const [mounted, setMounted] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const devtools = useDevTools();
 
   useEffect(() => {
     setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
+
+    // Check if user has seen onboarding
+    const hasSeenOnboarding = localStorage.getItem(ONBOARDING_KEY);
+    if (!hasSeenOnboarding) {
+      setShowOnboarding(true);
+    }
   }, []);
 
   const today = useMemo(() => {
     if (!mounted) return null;
     return devtools?.dateOverride ?? new Date();
   }, [mounted, devtools?.dateOverride]);
+
+  const handleCompleteOnboarding = () => {
+    localStorage.setItem(ONBOARDING_KEY, 'true');
+    setShowOnboarding(false);
+  };
+
+  if (showOnboarding) {
+    return <Onboarding onComplete={handleCompleteOnboarding} />;
+  }
 
   if (!today) {
     return (
@@ -40,10 +60,20 @@ export function TodayScreen() {
 }
 
 function TodayContent({ date }: { date: Date }) {
+  const router = useRouter();
   const schedule = useSchedule(date);
   const workout = useWorkout(date);
   const firstSession = getFirstSessionDate();
   const weekNumber = getWeekNumber(firstSession, date);
+
+  // Check if desktop is paired
+  const [isPaired, setIsPaired] = useState(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const desktopInfo = localStorage.getItem('traindaily_desktop_info');
+      setIsPaired(!!desktopInfo);
+    }
+  }, []);
 
   // Rest day
   if (!schedule.isTraining) {
@@ -171,6 +201,17 @@ function TodayContent({ date }: { date: Date }) {
           {schedule.weekProgress.completed}/{schedule.weekProgress.total} this week
         </span>
       </div>
+
+      {/* Sync button */}
+      <button
+        onClick={() => router.push('/pair')}
+        className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all mt-4"
+      >
+        <Smartphone className="w-4 h-4" />
+        <span className="text-sm">
+          {isPaired ? 'Synced with Desktop' : 'Pair with Desktop'}
+        </span>
+      </button>
     </div>
   );
 }
