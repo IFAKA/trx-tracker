@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install TRX Mic Check Native Messaging Host for Chrome
+# Install TRX Mic Check Native Messaging Host for Chrome or Brave
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -7,9 +7,26 @@ NATIVE_DIR="$SCRIPT_DIR/native"
 HOST_NAME="com.trx.mic_check"
 MANIFEST_SRC="$NATIVE_DIR/$HOST_NAME.json"
 SCRIPT_PATH="$NATIVE_DIR/trx_mic_check.sh"
-NM_DIR="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
+
+# Detect browser
+CHROME_DIR="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
+BRAVE_DIR="$HOME/Library/Application Support/BraveSoftware/Brave-Browser/NativeMessagingHosts"
+
+if [ -d "$HOME/Library/Application Support/BraveSoftware/Brave-Browser" ]; then
+  NM_DIR="$BRAVE_DIR"
+  BROWSER="Brave"
+elif [ -d "$HOME/Library/Application Support/Google/Chrome" ]; then
+  NM_DIR="$CHROME_DIR"
+  BROWSER="Chrome"
+else
+  echo "ERROR: Neither Brave nor Chrome found."
+  echo "  Brave path: $BRAVE_DIR"
+  echo "  Chrome path: $CHROME_DIR"
+  exit 1
+fi
 
 echo "=== TRX Mic Check — Native Host Installer ==="
+echo "Detected browser: $BROWSER"
 
 # 1. Make the mic check script executable
 chmod +x "$SCRIPT_PATH"
@@ -24,11 +41,11 @@ echo "[OK] Installed manifest to $NM_DIR/$HOST_NAME.json"
 
 # 4. Remind user to update extension ID
 echo ""
-echo "IMPORTANT: After loading the extension in Chrome, update the allowed_origins"
+echo "IMPORTANT: After loading the extension in $BROWSER, update the allowed_origins"
 echo "in $NM_DIR/$HOST_NAME.json with your actual extension ID:"
 echo ""
-echo '  "allowed_origins": ["chrome-extension://YOUR_ACTUAL_ID/"]'
+echo "  \"allowed_origins\": [\"chrome-extension://YOUR_ACTUAL_ID/\"]"
 echo ""
-echo "You can find your extension ID at chrome://extensions"
+echo "You can find your extension ID at ${BROWSER,,}://extensions"
 echo ""
 echo "Done!"
