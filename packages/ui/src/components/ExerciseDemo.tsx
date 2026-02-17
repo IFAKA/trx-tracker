@@ -79,7 +79,7 @@ export function ExerciseDemo({ youtubeId, title, onPlayingChange }: ExerciseDemo
           autoplay: 1,
           playsinline: 1,
           rel: 0,
-          modestbranding: 1,
+          origin: typeof window !== 'undefined' ? window.location.origin : '',
         },
         events: {
           onStateChange: (event: YT.OnStateChangeEvent) => {
