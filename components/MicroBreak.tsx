@@ -58,6 +58,13 @@ export function MicroBreak({ exercise, onDismiss }: MicroBreakProps) {
     };
   }, [isPaused, timer]);
 
+  // Auto-dismiss 5 seconds after timer completes
+  useEffect(() => {
+    if (!canDismiss) return;
+    const timeout = setTimeout(onDismiss, 5000);
+    return () => clearTimeout(timeout);
+  }, [canDismiss, onDismiss]);
+
   const handlePlayingChange = useCallback((isPlaying: boolean) => {
     setIsPaused(isPlaying);
   }, []);

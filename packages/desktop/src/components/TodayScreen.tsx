@@ -152,7 +152,16 @@ function TodayContent({ date }: { date: Date }) {
   }
 
   if (workout.state === 'resting') {
-    return <RestTimer seconds={workout.timer} onSkip={workout.skipTimer} onQuit={workout.quitWorkout} />;
+    return (
+      <RestTimer
+        seconds={workout.timer}
+        isPaused={workout.timerPaused}
+        onPauseToggle={workout.togglePauseTimer}
+        onSkip={workout.skipTimer}
+        onQuit={workout.quitWorkout}
+        onUndo={workout.undoLastSet}
+      />
+    );
   }
 
   if (workout.state === 'complete') {

@@ -28,6 +28,7 @@ export function useWorkout(date: Date) {
   const [data, setData] = useState<WorkoutData>(() => loadWorkoutData());
   const [flashColor, setFlashColor] = useState<'green' | 'red' | null>(null);
   const [nextExerciseName, setNextExerciseName] = useState('');
+  const [timerPaused, setTimerPaused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const countdownPlayedRef = useRef<Set<number>>(new Set());
@@ -92,9 +93,14 @@ export function useWorkout(date: Date) {
     wakeLockRef.current = null;
   }, []);
 
+  // Reset pause when leaving rest state
+  useEffect(() => {
+    if (state !== 'resting') setTimerPaused(false);
+  }, [state]);
+
   // Timer logic
   useEffect(() => {
-    if (state === 'resting' && timer > 0) {
+    if (state === 'resting' && timer > 0 && !timerPaused) {
       // Reset countdown tracking when timer starts fresh
       if (timer === REST_DURATION) {
         countdownPlayedRef.current = new Set();
@@ -123,7 +129,7 @@ export function useWorkout(date: Date) {
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, timer === REST_DURATION, devtools?.timerSpeed]);
+  }, [state, timer === REST_DURATION, devtools?.timerSpeed, timerPaused]);
 
   const advanceAfterRest = useCallback(() => {
     const nextSet = currentSet + 1;
@@ -290,6 +296,26 @@ export function useWorkout(date: Date) {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [state, quitWorkout]);
 
+  const togglePauseTimer = useCallback(() => {
+    setTimerPaused((prev) => !prev);
+  }, []);
+
+  const undoLastSet = useCallback(() => {
+    if (!currentExercise) return;
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setSessionReps((prev) => {
+      const key = currentExercise.key;
+      const current = prev[key] || [];
+      if (current.length === 0) return prev;
+      return { ...prev, [key]: current.slice(0, -1) };
+    });
+    setTimer(REST_DURATION);
+    setState('exercising');
+  }, [currentExercise]);
+
   const refreshData = useCallback(() => {
     setData(loadWorkoutData());
   }, []);
@@ -335,5 +361,8 @@ export function useWorkout(date: Date) {
     quitWorkout,
     refreshData,
     finishTransition,
+    togglePauseTimer,
+    undoLastSet,
+    timerPaused,
   };
 }

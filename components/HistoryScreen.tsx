@@ -97,9 +97,25 @@ export function HistoryScreen({ data, currentDate, onBack }: HistoryScreenProps)
         <>
           {/* Weekly consistency chart */}
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground/60">
-              Weekly Sessions
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-widest text-muted-foreground/60">
+                Weekly Sessions
+              </p>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground/50">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-sm bg-foreground inline-block" />
+                  5+
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-sm bg-muted-foreground inline-block" />
+                  3–4
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-sm bg-muted inline-block" />
+                  1–2
+                </span>
+              </div>
+            </div>
             <div className="h-32">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={weeklyData} barSize={20} margin={{ left: -20 }}>

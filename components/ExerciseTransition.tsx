@@ -15,7 +15,10 @@ export function ExerciseTransition({ exerciseName, onComplete }: ExerciseTransit
   }, [onComplete]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-6">
+    <div
+      className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-6 cursor-pointer select-none"
+      onClick={onComplete}
+    >
       <ArrowRight
         className="w-8 h-8 text-muted-foreground"
         style={{ animation: 'slide-down-in 500ms ease-out backwards' }}
@@ -32,6 +35,12 @@ export function ExerciseTransition({ exerciseName, onComplete }: ExerciseTransit
       >
         {exerciseName}
       </h1>
+      <p
+        className="text-xs text-muted-foreground/40 mt-2"
+        style={{ animation: 'stagger-in 400ms ease-out 600ms backwards' }}
+      >
+        Tap to continue
+      </p>
     </div>
   );
 }

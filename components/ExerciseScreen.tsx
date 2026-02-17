@@ -32,6 +32,7 @@ export function ExerciseScreen({
 }: ExerciseScreenProps) {
   const [inputValue, setInputValue] = useState('');
   const [showInstruction, setShowInstruction] = useState(false);
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const exercise = EXERCISES[exerciseIndex];
   const progressPercent = ((exerciseIndex) / EXERCISES.length) * 100;
@@ -39,8 +40,8 @@ export function ExerciseScreen({
   useEffect(() => {
     setInputValue('');
     setShowInstruction(false);
-    // Focus input on mount and exercise/set change
-    setTimeout(() => inputRef.current?.focus(), 100);
+    setShowQuitConfirm(false);
+    inputRef.current?.focus();
   }, [exerciseIndex, currentSet]);
 
   const handleSubmit = () => {
@@ -64,14 +65,32 @@ export function ExerciseScreen({
     >
       {/* Top bar */}
       <div className="flex items-center gap-3 mb-2">
-        <button
-          type="button"
-          onClick={onQuit}
-          className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Quit workout"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {showQuitConfirm ? (
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="text-xs text-muted-foreground">Quit?</span>
+            <button
+              onClick={onQuit}
+              className="text-xs text-destructive hover:text-destructive/80 transition-colors font-medium"
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => setShowQuitConfirm(false)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              No
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowQuitConfirm(true)}
+            className="p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            aria-label="Quit workout"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
         <Progress value={progressPercent} className="flex-1 h-1.5" />
         <span className="text-xs text-muted-foreground font-mono">
           {exerciseIndex + 1}/{EXERCISES.length}
@@ -88,7 +107,11 @@ export function ExerciseScreen({
           <button
             type="button"
             onClick={() => setShowInstruction(!showInstruction)}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground/80 hover:text-foreground transition-colors border border-muted-foreground/30 rounded-full px-3 py-1"
+            className={`flex items-center gap-1.5 text-xs transition-colors border rounded-full px-3 py-1 ${
+              showInstruction
+                ? 'text-foreground border-foreground/50 bg-muted/50'
+                : 'text-muted-foreground/80 hover:text-foreground border-muted-foreground/30'
+            }`}
           >
             <Info className="w-3.5 h-3.5" />
             <span>{showInstruction ? 'hide' : 'how to'}</span>
@@ -155,7 +178,7 @@ export function ExerciseScreen({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             className="text-center text-4xl font-mono h-16 border-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            placeholder="0"
+            placeholder=""
             min={0}
           />
           <Button

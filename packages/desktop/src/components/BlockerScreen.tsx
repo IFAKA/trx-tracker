@@ -7,6 +7,19 @@ export function BlockerScreen() {
   const today = new Date();
   const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
 
+  // Time until end of training day (midnight)
+  const midnight = new Date();
+  midnight.setHours(24, 0, 0, 0);
+  const msLeft = midnight.getTime() - today.getTime();
+  const hoursLeft = Math.floor(msLeft / (1000 * 60 * 60));
+  const minutesLeft = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
+  const unlockMessage =
+    hoursLeft > 0
+      ? `${hoursLeft}h ${minutesLeft}m left today`
+      : minutesLeft > 0
+        ? `${minutesLeft}m left today`
+        : 'Last chance — midnight in seconds';
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-8">
       <div className="flex flex-col items-center gap-4">
@@ -41,8 +54,9 @@ export function BlockerScreen() {
         </div>
       </div>
 
-      <div className="mt-8 text-xs text-muted-foreground/40 text-center">
+      <div className="mt-8 text-xs text-muted-foreground/40 text-center space-y-1">
         <p>Open TrainDaily from the menu bar to log your workout</p>
+        <p className="text-muted-foreground/60 font-mono">{unlockMessage}</p>
       </div>
     </div>
   );
