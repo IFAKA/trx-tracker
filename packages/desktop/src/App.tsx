@@ -22,6 +22,14 @@ function App() {
     } else {
       setRoute('main');
     }
+
+    // Handle in-app navigation from useRouter shim
+    const handleNavigate = (e: Event) => {
+      const dest = (e as CustomEvent<string>).detail;
+      if (dest.includes('pair')) setRoute('pairing');
+    };
+    window.addEventListener('tauri-navigate', handleNavigate);
+    return () => window.removeEventListener('tauri-navigate', handleNavigate);
   }, []);
 
   // Render based on route

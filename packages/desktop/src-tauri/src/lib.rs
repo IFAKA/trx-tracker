@@ -69,7 +69,7 @@ pub fn run() {
             let db_clone = db_for_sync.clone();
             let device_id_clone = device_id_for_sync.clone();
 
-            tokio::spawn(async move {
+            tauri::async_runtime::spawn(async move {
                 if let Err(e) = sync::start_server(db_clone, device_id_clone).await {
                     tracing::error!("Failed to start sync server: {}", e);
                 }
@@ -80,7 +80,7 @@ pub fn run() {
             let blocker_state_clone = blocker_state_for_task.clone();
             let app_handle_clone = app_handle.clone();
 
-            tokio::spawn(async move {
+            tauri::async_runtime::spawn(async move {
                 blocker::start_blocker(app_handle_clone, db_clone, blocker_state_clone).await;
             });
 
@@ -88,7 +88,7 @@ pub fn run() {
             let overlay_state_clone = overlay_state_for_task.clone();
             let app_handle_clone = app_handle.clone();
 
-            tokio::spawn(async move {
+            tauri::async_runtime::spawn(async move {
                 overlay::start_overlay(app_handle_clone, overlay_state_clone).await;
             });
 
