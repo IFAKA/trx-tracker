@@ -11,9 +11,13 @@ A no-excuses workout tracker with native desktop app (macOS) and mobile PWA that
 2. Open the `.dmg` and drag TrainDaily to Applications folder
 3. **First launch:** Right-click TrainDaily.app → Open → Confirm
    *(macOS Gatekeeper will show a warning since the app isn't from the App Store)*
-4. Grant microphone permission when prompted
+4. **If you see "damaged and can't be opened":** Run this once in Terminal, then open normally:
+   ```bash
+   xattr -cr /Applications/TrainDaily.app
+   ```
+5. Grant microphone permission when prompted
    *(Used to detect calls and skip hourly breaks automatically)*
-5. The app will guide you through onboarding
+6. The app will guide you through onboarding
 
 **Mobile PWA**
 Visit [traindaily.vercel.app](https://traindaily.vercel.app) → Add to home screen for native-like experience.
