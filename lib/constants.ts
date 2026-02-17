@@ -119,67 +119,94 @@ export const REST_DURATION = 90; // seconds (90-120 sec range, starting at 90)
 
 export const DEFAULT_TARGETS_REPS = [8, 8, 8] as const; // 3 sets of 8 reps to start
 
+// Evidence-based mobility routine (2x/week, 10-15 min)
+// Research: Active stretching + mobility + strengthening reduces pain
+// Source: https://pmc.ncbi.nlm.nih.gov/articles/PMC7345456/
+// Source: https://link.springer.com/article/10.1007/s11332-025-01488-6
 export const MOBILITY_EXERCISES: MobilityExercise[] = [
+  {
+    name: 'CAT-COW (DYNAMIC)',
+    duration: 60,
+    sides: false,
+    instruction: 'On hands and knees. Arch back (cow), then round spine (cat). 20 slow reps. Breathe with movement.',
+    youtubeId: 'iZ1eZBY4fwM',
+  },
   {
     name: 'HIP FLEXOR STRETCH',
     duration: 60,
     sides: true,
-    instruction: 'Kneel on one knee, push hips forward. Hold.',
+    instruction: 'Kneel on one knee, push hips forward. Pulse gently 10x, then hold 20s. Active stretch.',
     youtubeId: 'iZ1eZBY4fwM',
-  },
-  {
-    name: 'CHEST DOORWAY STRETCH',
-    duration: 60,
-    sides: false,
-    instruction: 'Arms on doorframe at 90°. Lean through. Hold.',
-    youtubeId: '8wiZpixdHPU',
-  },
-  {
-    name: 'THORACIC EXTENSION',
-    duration: 60,
-    sides: false,
-    instruction: 'Drape back over TRX straps or foam roller. Arms overhead.',
-    youtubeId: 'SQF-0s1CckA',
-  },
-  {
-    name: 'SHOULDER DISLOCATES',
-    duration: 30,
-    sides: false,
-    instruction: 'Band or towel overhead, rotate behind back. Slow.',
-    youtubeId: 'a9rqTzZaI7s',
-  },
-  {
-    name: 'GLUTE BRIDGES',
-    duration: 60,
-    sides: false,
-    instruction: 'Lying face up, squeeze glutes, lift hips. Hold 3s at top.',
-    youtubeId: 'wPM8icPu6H8',
-  },
-];
-
-export const MICRO_BREAK_EXERCISES: MicroBreakExercise[] = [
-  {
-    name: 'WALL SLIDES',
-    duration: 120,
-    instruction: 'Back against wall, arms at 90°. Slide up and down slowly.',
-    youtubeId: 'oMSVe7PWJ3o',
   },
   {
     name: 'THORACIC ROTATION',
-    duration: 120,
-    instruction: 'On all fours, hand behind head. Rotate open. Alternate sides.',
+    duration: 60,
+    sides: true,
+    instruction: 'On all fours, hand behind head. Rotate open 15x each side. Full range, controlled.',
     youtubeId: 'QWwiOHexU8I',
   },
   {
-    name: 'HIP FLEXOR STRETCH',
-    duration: 120,
-    instruction: 'Kneel on one knee, push hips forward. 60s each side.',
+    name: 'SCAPULAR CARS',
+    duration: 60,
+    sides: false,
+    instruction: 'Standing. Move shoulder blades: up, back, down, forward. 10 circles each direction. Slow, controlled.',
+    youtubeId: 'a9rqTzZaI7s',
+  },
+  {
+    name: 'WRIST & ANKLE CIRCLES',
+    duration: 60,
+    sides: false,
+    instruction: '10 circles each wrist (both directions). 10 circles each ankle. Shake out hands/feet after.',
+    youtubeId: 'oMSVe7PWJ3o',
+  },
+  {
+    name: 'DEEP SQUAT HOLD',
+    duration: 60,
+    sides: false,
+    instruction: 'Deep squat, heels down if possible. Hold 30s. Stand, shake out. Repeat. Opens hips.',
+    youtubeId: 'wPM8icPu6H8',
+  },
+  {
+    name: 'CHEST OPENER (DYNAMIC)',
+    duration: 60,
+    sides: false,
+    instruction: 'Clasp hands behind back. Lift arms up 20x. Then doorway stretch, pulse gently 15x. Active mobilization.',
+    youtubeId: '8wiZpixdHPU',
+  },
+];
+
+// Evidence-based micro-breaks (every 30 min, 2-3 min duration)
+// Research: Light activity > static stretching for prolonged sitting
+// Source: https://www.tandfonline.com/doi/full/10.1080/23311916.2022.2026206
+export const MICRO_BREAK_EXERCISES: MicroBreakExercise[] = [
+  {
+    name: 'WALK + ARM CIRCLES',
+    duration: 150, // 2.5 minutes
+    instruction: 'Walk around room. Every 10 steps: 5 big arm circles forward, 5 backward. Keep moving entire time.',
+    youtubeId: 'oMSVe7PWJ3o',
+  },
+  {
+    name: 'WALK + LEG SWINGS',
+    duration: 150,
+    instruction: 'Walk 20 steps. Stop, hold wall. 10 leg swings each leg (forward/back). Repeat. Stay active.',
+    youtubeId: 'QWwiOHexU8I',
+  },
+  {
+    name: 'WALK + TORSO TWISTS',
+    duration: 150,
+    instruction: 'Walk while twisting torso side to side. Every 10 steps: 5 deep squats. Keep moving.',
     youtubeId: 'iZ1eZBY4fwM',
   },
   {
-    name: 'CHEST DOORWAY STRETCH',
-    duration: 120,
-    instruction: 'Arms on doorframe at 90°. Lean through and hold.',
+    name: 'STAIRS OR MARCHING',
+    duration: 150,
+    instruction: 'Walk up/down stairs if available. Otherwise: march in place, knees high. Add arm pumps. Continuous.',
     youtubeId: '8wiZpixdHPU',
+  },
+  {
+    name: 'WALK + SHOULDER ROLLS',
+    duration: 150,
+    instruction: 'Walk continuously. Roll shoulders backward 10x, forward 10x. Shake arms out. Repeat while walking.',
+    youtubeId: 'oMSVe7PWJ3o',
   },
 ];

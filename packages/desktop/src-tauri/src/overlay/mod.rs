@@ -1,18 +1,28 @@
 /**
- * Micro-Break Overlay Module
+ * Micro-Break Overlay Module (Evidence-Based)
  *
- * Hourly full-screen exercise prompts (micro-breaks)
- * - Triggers every hour
- * - Shows full-screen exercise instruction
+ * Research-backed micro-breaks for prolonged sitting workers
+ * - Triggers every 30 minutes (optimal for desk workers)
+ * - 2-3 min active breaks (walking/movement)
+ * - Work hours: 8am-midnight (16-hour workday)
+ * - Skips rest days (Sunday)
  * - Defers if microphone is active (on a call)
- * - Reschedules deferred breaks for 5 minutes later
+ *
+ * Evidence: https://www.tandfonline.com/doi/full/10.1080/23311916.2022.2026206
+ * Meta-analysis: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0272460
  */
 
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 use tokio::time::{sleep, Duration, Instant};
+use chrono::{Local, Datelike, Timelike};
 
-const MICRO_BREAK_INTERVAL_SECS: u64 = 3600; // 1 hour
+// Evidence-based intervals: 2-3 min breaks every 30 min for sedentary workers
+const MICRO_BREAK_INTERVAL_SECS: u64 = 1800; // 30 minutes (was 60)
 const DEFER_DURATION_SECS: u64 = 300; // 5 minutes
+
+// Work hours for 16-hour daily computer use (8am-midnight)
+const WORK_START_HOUR: u8 = 8;  // 8:00 AM
+const WORK_END_HOUR: u8 = 24;   // 12:00 AM (midnight)
 
 pub struct OverlayState {
     pub last_break: Instant,
@@ -28,6 +38,21 @@ impl OverlayState {
     }
 }
 
+/// Check if current time is within work hours and not a rest day
+fn should_trigger_break() -> bool {
+    let now = Local::now();
+    let hour = now.hour() as u8;
+    let weekday = now.weekday();
+
+    // Skip on Sunday (rest day = 0 in chrono, Sun)
+    if weekday == chrono::Weekday::Sun {
+        return false;
+    }
+
+    // Only during work hours (8am-midnight for 16h workday)
+    hour >= WORK_START_HOUR && hour < WORK_END_HOUR
+}
+
 /// Start micro-break overlay background task
 pub async fn start_overlay(
     app_handle: tauri::AppHandle,
@@ -35,6 +60,11 @@ pub async fn start_overlay(
 ) {
     loop {
         sleep(Duration::from_secs(60)).await; // Check every minute
+
+        // Skip if outside work hours or rest day
+        if !should_trigger_break() {
+            continue;
+        }
 
         let mut overlay_state = state.lock().unwrap();
         let now = Instant::now();
