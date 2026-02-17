@@ -42,19 +42,19 @@ jobs:
         run: pnpm install
 
       - name: Run semantic-release (version bump)
+        uses: cycjimmy/semantic-release-action@v4
+        id: semantic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
-        id: semantic
 
       - name: Build Tauri app
-        if: steps.semantic.outputs.new_release_published == 'true'
+        if: steps.semantic.outputs.new_release_published == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           cd packages/desktop
           pnpm run tauri build
 
       - name: Upload .dmg to GitHub Release
-        if: steps.semantic.outputs.new_release_published == 'true'
+        if: steps.semantic.outputs.new_release_published == 'true' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.semantic.outputs.new_release_version }}
