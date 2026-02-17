@@ -11,7 +11,7 @@
  * - Checks every 10 seconds on training days
  */
 
-use tauri::{Manager, Window, WindowBuilder, WindowUrl};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 use std::sync::{Arc, Mutex};
 use crate::db::Database;
 
@@ -98,10 +98,10 @@ fn show_blocker_window(app_handle: &tauri::AppHandle) -> Result<(), Box<dyn std:
     }
 
     // Create new blocker window
-    let window = WindowBuilder::new(
+    let window = WebviewWindowBuilder::new(
         app_handle,
         "blocker",
-        WindowUrl::App("/blocker".into()),
+        WebviewUrl::App("/blocker".into()),
     )
     .title("Complete Workout to Continue")
     .fullscreen(true)

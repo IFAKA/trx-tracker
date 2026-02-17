@@ -8,7 +8,7 @@
  * - Reschedules deferred breaks for 5 minutes later
  */
 
-use tauri::{Manager, WindowBuilder, WindowUrl};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 use tokio::time::{sleep, Duration, Instant};
 
 const MICRO_BREAK_INTERVAL_SECS: u64 = 3600; // 1 hour
@@ -92,10 +92,10 @@ fn show_overlay_window(app_handle: &tauri::AppHandle) -> Result<(), Box<dyn std:
     }
 
     // Create new overlay window
-    let window = WindowBuilder::new(
+    let window = WebviewWindowBuilder::new(
         app_handle,
         "micro-break",
-        WindowUrl::App("/micro-break".into()),
+        WebviewUrl::App("/micro-break".into()),
     )
     .title("Micro-Break")
     .fullscreen(true)

@@ -33,8 +33,16 @@ pub fn run() {
     let blocker_state = Arc::new(Mutex::new(blocker::BlockerState::new()));
     let overlay_state = Arc::new(Mutex::new(overlay::OverlayState::new()));
 
+    // Clone Arc references before moving state into .manage()
+    let db_arc = Arc::new(Mutex::new(db));
+    let db_for_sync = db_arc.clone();
+    let db_for_blocker = db_arc.clone();
+    let device_id_for_sync = device_id.clone();
+    let blocker_state_for_task = blocker_state.clone();
+    let overlay_state_for_task = overlay_state.clone();
+
     let state = AppState {
-        db: Arc::new(Mutex::new(db)),
+        db: db_arc,
         device_id,
         blocker_state: blocker_state.clone(),
         overlay_state: overlay_state.clone(),
@@ -54,12 +62,12 @@ pub fn run() {
             commands::get_qr_code_data,
             overlay::dismiss_micro_break,
         ])
-        .setup(|app| {
+        .setup(move |app| {
             let app_handle = app.handle().clone();
 
             // Start sync server
-            let db_clone = state.db.clone();
-            let device_id_clone = state.device_id.clone();
+            let db_clone = db_for_sync.clone();
+            let device_id_clone = device_id_for_sync.clone();
 
             tokio::spawn(async move {
                 if let Err(e) = sync::start_server(db_clone, device_id_clone).await {
@@ -68,8 +76,8 @@ pub fn run() {
             });
 
             // Start app blocker
-            let db_clone = state.db.clone();
-            let blocker_state_clone = blocker_state.clone();
+            let db_clone = db_for_blocker.clone();
+            let blocker_state_clone = blocker_state_for_task.clone();
             let app_handle_clone = app_handle.clone();
 
             tokio::spawn(async move {
@@ -77,7 +85,7 @@ pub fn run() {
             });
 
             // Start micro-break overlay
-            let overlay_state_clone = overlay_state.clone();
+            let overlay_state_clone = overlay_state_for_task.clone();
             let app_handle_clone = app_handle.clone();
 
             tokio::spawn(async move {
