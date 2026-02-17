@@ -12,9 +12,9 @@ import { RestDayScreen } from './RestDayScreen';
 import { Onboarding } from './Onboarding';
 import { useWorkout } from '@/hooks/useWorkout';
 import { useSchedule } from '@/hooks/useSchedule';
+import { useFirstSessionDate } from '@/hooks/useFirstSessionDate';
 import { useDevTools } from '@/lib/devtools';
 import { formatDisplayDate, getWeekNumber } from '@/lib/workout-utils';
-import { getFirstSessionDate } from '@/lib/storage';
 import { EXERCISES } from '@/lib/constants';
 
 const ONBOARDING_KEY = 'traindaily_onboarding_completed';
@@ -63,7 +63,7 @@ function TodayContent({ date }: { date: Date }) {
   const router = useRouter();
   const schedule = useSchedule(date);
   const workout = useWorkout(date);
-  const firstSession = getFirstSessionDate();
+  const firstSession = useFirstSessionDate();
   const weekNumber = getWeekNumber(firstSession, date);
 
   // Check if desktop is paired
