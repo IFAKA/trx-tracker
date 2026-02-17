@@ -1,234 +1,288 @@
 # TrainDaily
 
-A no-excuses workout coach: PWA for guided workouts with progressive overload, paired with a Chrome extension that blocks browsing until you train and enforces hourly micro-break mobility exercises.
+A no-excuses workout tracker with native desktop app (macOS) and mobile PWA that sync over local network. Progressive overload, accountability features, and hourly micro-breaks.
 
 ## What It Does
 
-**PWA (the app)**
-- Guided TRX workout flow with 7 exercises, set/rep tracking, and rest timers
-- Progressive overload — automatically suggests weight/rep increases
-- Session history and weekly stats
-- Sound cues and haptic feedback
-- Installable on your phone (standalone PWA)
+### Desktop App (macOS)
+- **Full workout tracking** with 7 exercises, progressive overload, and rest timers
+- **App blocker** - Full-screen overlay on training days (Mon/Wed/Fri) until workout logged
+- **Hourly micro-breaks** - Prompts for mobility exercises (deferred during calls)
+- **Mic detection** - Detects Teams/Zoom/Meet calls, skips breaks automatically
+- **Local sync server** - HTTPS server for syncing with mobile
+- **Multi-user support** - Works across macOS user accounts (personal ↔ work)
+- **SQLite storage** - All data stored locally at `/Users/Shared/TrainDaily/`
 
-**Chrome Extension**
-- Blocks all browsing on training days until workout is logged
-- Hourly micro-break overlays with mobility exercises (wall slides, thoracic rotation, hip flexor stretch, chest doorway stretch)
-- Auto mic detection — suppresses breaks during calls (Teams, Zoom, etc.) so you don't get embarrassed on screen share
+### Mobile PWA
+- **Same workout features** as desktop (full parity)
+- **QR code pairing** - Scan once, syncs forever
+- **Offline support** - Works without desktop, syncs when connected
+- **Auto-sync** - Bidirectional sync with desktop over local network
+- **Installable** - Add to home screen for native-like experience
+
+## Architecture
+
+```
+traindaily/
+├── packages/
+│   ├── core/              # Platform-agnostic business logic (TypeScript)
+│   ├── design-system/     # Apple design tokens & sounds
+│   └── desktop/           # Tauri app (Rust backend + React frontend)
+├── app/                   # Next.js PWA (mobile)
+├── components/            # Shared React components
+└── lib/                   # Shared utilities
+```
 
 ## Prerequisites
 
-Before you start, make sure you have these installed on your computer:
+### For Desktop App Development
+1. **Rust** (latest stable)
+   - Install: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+   - Verify: `rustc --version`
 
-1. **Node.js** (version 18 or higher)
-   - Download from [nodejs.org](https://nodejs.org)
-   - This includes npm (Node Package Manager) which you'll need to run commands
-   - To check if you have it: Open Terminal (Mac) or Command Prompt (Windows) and type `node --version`
+2. **Node.js** (v18+) and pnpm
+   - Install Node: [nodejs.org](https://nodejs.org)
+   - Install pnpm: `npm install -g pnpm`
+   - Verify: `node --version && pnpm --version`
 
-2. **Google Chrome** or **Brave Browser**
-   - Download from [google.com/chrome](https://www.google.com/chrome) or [brave.com](https://brave.com)
+3. **macOS** (required for desktop app)
+   - Xcode Command Line Tools: `xcode-select --install`
 
-3. **Terminal/Command Line basics**
-   - Mac: Use the Terminal app (in Applications > Utilities)
-   - Windows: Use Command Prompt or PowerShell
-   - You'll need to type commands and press Enter
+### For PWA Development Only
+- Node.js (v18+)
+- Any modern browser
 
 ## Setup
 
-### Step 1: Download and Run the PWA
+### Option 1: Desktop App (Full Features)
 
-The PWA (Progressive Web App) is the main workout tracker that runs in your browser.
+1. **Clone and install dependencies**
+   ```bash
+   git clone https://github.com/IFAKA/traindaily.git
+   cd traindaily
+   pnpm install
+   ```
 
-1. **Download this project**
-   - Click the green "Code" button on GitHub and select "Download ZIP"
-   - Unzip the file to a location you'll remember (like your Desktop or Documents folder)
+2. **Build and run desktop app**
+   ```bash
+   cd packages/desktop
+   pnpm tauri dev
+   ```
 
-2. **Open Terminal/Command Prompt**
-   - Mac: Press `Cmd + Space`, type "Terminal", and press Enter
-   - Windows: Press `Windows + R`, type "cmd", and press Enter
+   This will:
+   - Build the React frontend
+   - Compile the Rust backend
+   - Launch the desktop app
+   - Create SQLite database at `/Users/Shared/TrainDaily/`
 
-3. **Navigate to the project folder**
-   - Type `cd` followed by a space
-   - Drag the unzipped folder into the Terminal window (this auto-fills the path)
-   - Press Enter
-   - Example: `cd /Users/yourname/Desktop/traindaily`
+3. **Build production .dmg**
+   ```bash
+   cd packages/desktop
+   pnpm tauri build
+   ```
 
-4. **Install dependencies**
-   - Type: `npm install`
-   - Press Enter
-   - Wait for it to finish (this downloads all required code libraries, may take 1-2 minutes)
+   Output: `src-tauri/target/release/bundle/dmg/TrainDaily_*.dmg`
 
-5. **Start the app**
-   - Type: `npm run dev`
-   - Press Enter
-   - You should see "Ready started server on 0.0.0.0:3000"
+4. **Pair mobile device**
+   - Open desktop app
+   - QR code appears on screen
+   - Scan with phone camera
+   - Automatic sync!
 
-6. **Open the app in your browser**
-   - Go to [http://localhost:3000](http://localhost:3000)
-   - You should see the TrainDaily workout interface
+### Option 2: PWA Only (No Desktop)
 
-7. **Install on mobile (optional)**
-   - On your phone's browser, visit `http://YOUR_COMPUTER_IP:3000`
-   - To find your computer's IP: Mac - System Preferences > Network, Windows - type `ipconfig` in Command Prompt
-   - Tap "Add to Home Screen" to install as a standalone app
+1. **Clone and install**
+   ```bash
+   git clone https://github.com/IFAKA/traindaily.git
+   cd traindaily
+   pnpm install
+   ```
 
-### Step 2: Install the Chrome Extension
+2. **Run development server**
+   ```bash
+   pnpm dev
+   ```
 
-The extension blocks browsing on training days and shows hourly micro-break exercises.
+   Open [http://localhost:3000](http://localhost:3000)
 
-1. **Open Chrome Extensions page**
-   - Open Google Chrome or Brave
-   - In the address bar, type: `chrome://extensions`
-   - Press Enter
+3. **Install on mobile**
+   - Visit `http://YOUR_COMPUTER_IP:3000` on phone
+   - Tap "Add to Home Screen"
 
-2. **Enable Developer Mode**
-   - Look for a toggle switch in the top-right corner that says "Developer mode"
-   - Click it so it turns blue (ON)
-   - You should now see new buttons appear: "Load unpacked", "Pack extension", "Update"
+4. **Deploy to production**
+   ```bash
+   pnpm build
+   vercel deploy --prod
+   ```
 
-3. **Load the extension**
-   - Click the "Load unpacked" button
-   - A file picker window will open
-   - Navigate to where you unzipped TrainDaily
-   - Open the `extension` folder (you should see files like `manifest.json`, `background.js` inside)
-   - Click "Select" or "Open"
+## Key Features
 
-4. **Save your Extension ID (important for Step 3)**
-   - You should now see "TrainDaily" in your extensions list
-   - Below the extension name, you'll see a line like "ID: abcdefghijklmnop..."
-   - Copy this ID somewhere (you'll need it in Step 3)
-   - Example: `abcdefghijklmnopqrstuvwxyz123456`
+### Progressive Overload
+- Weeks 1-4: 2 sets per exercise
+- Weeks 5+: 3 sets per exercise
+- Auto-increments targets when you hit all reps
 
-The extension is now active. It will block browsing on training days (Mon/Wed/Fri) until you log your workout.
+### Accountability
+- **Desktop only**: Full-screen blocker on training days
+- **Desktop only**: Can't close app until workout logged
+- **Both platforms**: Track weekly progress, view stats
 
-### Step 3: Set Up Mic Detection (macOS only, optional)
+### Micro-Breaks (Desktop)
+- Prompts every hour with mobility exercise
+- 4 exercises: Wall slides, Thoracic rotation, Hip flexor stretch, Chest doorway stretch
+- Auto-deferred if microphone active (Teams/Zoom detection)
 
-This feature detects when your microphone is active (Zoom, Teams, etc.) and skips micro-breaks so you don't get interrupted during calls.
+### Sync (Desktop + Mobile)
+- QR code pairing (one-time setup)
+- HTTPS with self-signed cert
+- Token-based authentication
+- Router-agnostic (survives IP changes)
+- Bidirectional (both devices can log workouts)
 
-**Windows users:** Skip this step. Mic detection is only available on macOS.
+## Development
 
-**macOS users:** You have two options:
+### Monorepo Structure
 
-#### Option A: Automatic Setup (recommended)
+```bash
+pnpm install              # Install all dependencies (root + all packages)
 
-1. **Open Terminal** (if not already open)
+# Desktop app
+cd packages/desktop
+pnpm tauri dev            # Run in dev mode
+pnpm tauri build          # Build production .dmg
+pnpm build                # Build frontend only
 
-2. **Make sure you're in the project folder**
-   - Type: `pwd` and press Enter
-   - It should show the path to the traindaily folder
-   - If not, navigate back using `cd /path/to/traindaily`
+# Core package (shared logic)
+cd packages/core
+pnpm test                 # Run 44 unit tests
+pnpm test:ui              # Run tests with UI
 
-3. **Run the installer script**
-   - Type: `./extension/install-native-host.sh`
-   - Press Enter
-   - If you see "Permission denied", first type: `chmod +x extension/install-native-host.sh` and press Enter, then try again
-
-4. **Update the extension ID**
-   - Type: `open ~/Library/Application\ Support/Google/Chrome/NativeMessagingHosts/com.trx.mic_check.json`
-   - Press Enter
-   - This opens the file in TextEdit
-   - Find the line: `"allowed_origins": ["chrome-extension://EXTENSION_ID/"]`
-   - Replace `EXTENSION_ID` with the actual ID you saved from Step 2
-   - Example: `"allowed_origins": ["chrome-extension://abcdefghijklmnopqrstuvwxyz123456/"]`
-   - Save the file (Cmd + S) and close TextEdit
-
-5. **If using Brave browser**
-   - The file location is slightly different
-   - Type: `open ~/Library/Application\ Support/BraveSoftware/Brave-Browser/NativeMessagingHosts/com.trx.mic_check.json`
-   - Follow the same steps to replace the extension ID
-
-#### Option B: Skip This Step
-
-If this seems too technical, you can skip it entirely. The extension will still work perfectly, but micro-breaks will appear every hour even during calls. You can manually dismiss them by clicking "Skip Break".
-
-## Troubleshooting
-
-### "npm: command not found"
-- You don't have Node.js installed
-- Download and install from [nodejs.org](https://nodejs.org)
-- Close and reopen Terminal/Command Prompt after installing
-
-### "Cannot find module" errors
-- Run `npm install` again
-- Make sure you're in the correct folder (the one containing `package.json`)
-
-### Port 3000 is already in use
-- Something else is using port 3000
-- Stop the other app, or edit `package.json` to use a different port
-- Or kill the process: `lsof -ti:3000 | xargs kill` (Mac) or `netstat -ano | findstr :3000` (Windows)
-
-### Extension doesn't appear in Chrome
-- Make sure you selected the `extension` folder, not the root `traindaily` folder
-- Check that Developer mode is enabled (toggle should be blue/on)
-- Try clicking "Update" button on the extensions page
-
-### Micro-breaks still appear during calls (macOS)
-- Double-check the extension ID in the manifest file matches exactly
-- Make sure there are no extra spaces or quotes
-- Restart Chrome after editing the manifest
-- Grant microphone permissions to Chrome in System Preferences > Security & Privacy > Microphone
-
-### Browser blocks are not working
-- Check that today is a training day (Monday, Wednesday, or Friday)
-- Make sure you haven't already logged a workout today
-- Reload the extension: go to `chrome://extensions` and click the reload icon
-
-### Need more help?
-- Check the browser console for errors: Right-click > Inspect > Console tab
-- Check extension errors: `chrome://extensions` > Details > Errors button
-
-## How It Works (For Developers)
-
-### Folder Structure
-
-```
-app/                  # Next.js app (pages, layout, PWA manifest)
-components/           # React components (TodayScreen, ExerciseScreen, RestTimer, etc.)
-hooks/                # Custom hooks (useWorkout, useProgression, useSchedule, etc.)
-lib/                  # Types, constants, utilities
-extension/            # Chrome extension files
-  ├── background.js   # Service worker (alarms, workout blocking, mic check)
-  ├── content.js      # Injected UI (block overlay, micro-break overlay)
-  ├── popup/          # Extension popup (status dashboard)
-  ├── native/         # Native Messaging host (CoreAudio mic detection)
-  └── install-native-host.sh
+# PWA
+cd ../..                  # Back to root
+pnpm dev                  # Run Next.js dev server
+pnpm build                # Build for production
 ```
 
-### Key Files Explained
+### Testing
 
-- **app/page.tsx** - Main workout interface
-- **components/TodayScreen.tsx** - Orchestrates all workout screens
-- **hooks/useWorkout.ts** - State machine for workout flow (idle → exercising → resting → complete)
-- **extension/background.js** - Runs in the background, manages alarms and blocking logic
-- **extension/content.js** - Injects overlays onto web pages
-- **extension/native/mic_check.swift** - Checks if your microphone is in use
+```bash
+# Unit tests (core package)
+cd packages/core
+pnpm test
+
+# E2E tests (PWA)
+cd ../..
+pnpm dev                  # Start dev server first
+npx playwright test       # Run all e2e tests
+npx playwright test --ui  # Run with UI
+```
 
 ### Tech Stack
 
-**Web App:**
-- Next.js 16 (App Router) + React 19 + TypeScript
+**Desktop (Tauri)**
+- Rust backend: Axum, Rustls, SQLite, CoreAudio
+- React frontend: TypeScript, Vite, Tailwind CSS v4
+- 15 Rust crates, 30+ npm packages
+
+**Core Package**
+- Pure TypeScript (no platform dependencies)
+- Progressive overload algorithm (tested)
+- Storage abstraction (works with SQLite, localStorage, AsyncStorage)
+
+**PWA**
+- Next.js 16 (App Router) + React 19
 - Tailwind CSS v4 with OKLCh colors
-- shadcn/ui components (New York style)
-- Recharts for stats visualization
-- date-fns for date handling
-- Lucide React for icons
+- shadcn/ui components
+- Web Audio, Wake Lock, Vibration APIs
 
-**Chrome Extension:**
-- Manifest V3
-- Service worker architecture
-- Native Messaging for mic detection
+## Uninstall (Desktop)
 
-**Browser APIs:**
-- Wake Lock (keeps screen on during workout)
-- Vibration API (haptic feedback)
-- Web Audio (sound cues)
-- localStorage (data persistence)
-
-### Development Commands
+Removes all traces (app, data, certificates):
 
 ```bash
-npm run dev          # Start dev server on localhost:3000
-npm run build        # Build for production
-npm run lint         # Run ESLint
-npx playwright test  # Run end-to-end tests (requires dev server running)
+sudo bash /Applications/TrainDaily.app/Contents/Resources/uninstall.sh
 ```
+
+Or manually:
+```bash
+sudo rm -rf /Applications/TrainDaily.app
+sudo rm -rf /Users/Shared/TrainDaily
+```
+
+## Folder Structure
+
+```
+packages/desktop/src-tauri/src/
+├── lib.rs              # App entry, spawns 3 background tasks
+├── commands.rs         # 8 Tauri commands exposed to frontend
+├── db/mod.rs          # SQLite wrapper
+├── cert/mod.rs        # Self-signed TLS certificate generation
+├── sync/mod.rs        # HTTPS server (Axum + Rustls)
+├── mic/mod.rs         # CoreAudio mic detection (macOS)
+├── blocker/mod.rs     # App blocker (training day enforcement)
+└── overlay/mod.rs     # Micro-break system (hourly prompts)
+
+packages/desktop/src/
+├── components/        # React UI (copied from PWA)
+├── hooks/            # Platform-specific hook wrappers
+├── lib/
+│   ├── storage-tauri.ts   # SQLite adapter
+│   ├── audio.ts          # Web Audio sound engine
+│   └── sync-client.ts    # Desktop discovery & sync
+└── App.tsx           # Main app with routing
+
+packages/core/
+├── lib/              # Business logic (progression, schedule, utils)
+├── hooks/            # Platform-agnostic hooks
+└── __tests__/        # 44 unit tests
+
+app/                  # Next.js PWA
+├── page.tsx          # Main workout interface
+└── pair/page.tsx     # QR code pairing
+```
+
+## Troubleshooting
+
+### Desktop App
+
+**"cargo: command not found"**
+- Install Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+- Restart terminal
+
+**Build fails with "missing xcrun"**
+- Install Xcode Command Line Tools: `xcode-select --install`
+
+**"Failed to initialize database"**
+- Check permissions: `ls -la /Users/Shared/TrainDaily/`
+- Should be readable/writable by all users
+
+**Mic detection not working**
+- Grant microphone permission: System Preferences > Security & Privacy > Microphone
+- Check logs: `tail -f /Users/Shared/TrainDaily/logs/daemon.log`
+
+### PWA
+
+**"Port 3000 already in use"**
+- Kill process: `lsof -ti:3000 | xargs kill`
+- Or use different port: Edit `package.json` dev script
+
+**Sync not working**
+- Verify desktop app is running
+- Check both devices on same WiFi network
+- Try re-pairing (scan QR code again)
+- Check browser console for errors
+
+**QR code doesn't scan**
+- Ensure phone camera can access URL (use phone's default camera app)
+- Verify QR contains valid URL starting with `https://traindaily.vercel.app/pair?`
+
+## Documentation
+
+- **MIGRATION_COMPLETE.md** - Full migration documentation
+- **MIGRATION_PROGRESS.md** - Phase-by-phase progress tracker
+- **packages/core/README.md** - Core package API docs
+- **packages/desktop/README.md** - Desktop app architecture
+
+## License
+
+MIT

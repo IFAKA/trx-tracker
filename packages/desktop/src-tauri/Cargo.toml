@@ -14,7 +14,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 # Tauri core
-tauri = { version = "2", features = ["tray-icon", "window-all", "macos-private-api"] }
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
 tauri-plugin-shell = "2"
 
@@ -41,7 +41,7 @@ rustls-pemfile = "2"
 
 # macOS CoreAudio (mic detection)
 [target.'cfg(target_os = "macos")'.dependencies]
-core-audio = "0.11"
+coreaudio-sys = "0.2"
 core-foundation = "0.10"
 
 # Utilities
