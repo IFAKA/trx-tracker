@@ -2,20 +2,16 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Dumbbell, Play, CheckCircle, Calendar, Smartphone } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button, ExerciseScreen, RestTimer, ExerciseTransition, SessionComplete, RestDayScreen, Onboarding } from '@traindaily/ui';
 import { useRouter } from 'next/navigation';
-import { ExerciseScreen } from './ExerciseScreen';
-import { RestTimer } from './RestTimer';
-import { ExerciseTransition } from './ExerciseTransition';
-import { SessionComplete } from './SessionComplete';
-import { RestDayScreen } from './RestDayScreen';
-import { Onboarding } from './Onboarding';
 import { useWorkout } from '@/hooks/useWorkout';
 import { useSchedule } from '@/hooks/useSchedule';
 import { useFirstSessionDate } from '@/hooks/useFirstSessionDate';
+import { useMobility } from '@/hooks/useMobility';
 import { useDevTools } from '@/lib/devtools';
 import { formatDisplayDate, getWeekNumber } from '@/lib/workout-utils';
-import { EXERCISES } from '@/lib/constants';
+import { PUSH_EXERCISES, PULL_EXERCISES, LEGS_EXERCISES } from '@/lib/constants';
+import { getWorkoutType } from '@traindaily/core';
 
 const ONBOARDING_KEY = 'traindaily_onboarding_completed';
 
@@ -63,8 +59,10 @@ function TodayContent({ date }: { date: Date }) {
   const router = useRouter();
   const schedule = useSchedule(date);
   const workout = useWorkout(date);
+  const mobility = useMobility();
   const firstSession = useFirstSessionDate();
   const weekNumber = getWeekNumber(firstSession, date);
+  const workoutType = getWorkoutType(date);
 
   // Check if desktop is paired
   const [isPaired, setIsPaired] = useState(false);
@@ -82,6 +80,7 @@ function TodayContent({ date }: { date: Date }) {
         nextTraining={schedule.nextTraining}
         weekCompleted={schedule.weekProgress.completed}
         weekTotal={schedule.weekProgress.total}
+        mobility={mobility}
       />
     );
   }
@@ -89,10 +88,17 @@ function TodayContent({ date }: { date: Date }) {
   // Already done
   if (schedule.isDone && workout.state === 'idle') {
     const session = workout.data[schedule.dateKey];
+    const sessionWorkoutType = session?.workout_type || workoutType;
+    const completedExercises = sessionWorkoutType === 'push'
+      ? PUSH_EXERCISES
+      : sessionWorkoutType === 'pull'
+      ? PULL_EXERCISES
+      : LEGS_EXERCISES;
+
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-6">
         <CheckCircle className="w-16 h-16 text-green-500" />
-        <h1 className="text-xl font-bold tracking-tight">DONE</h1>
+        <h1 className="text-xl font-bold tracking-tight uppercase">{sessionWorkoutType} DONE</h1>
         <p className="text-sm text-muted-foreground">{formatDisplayDate(date)}</p>
 
         {/* Quick summary */}
@@ -101,7 +107,7 @@ function TodayContent({ date }: { date: Date }) {
             <span>Exercise</span>
             <span>Sets</span>
           </div>
-          {EXERCISES.map((ex) => {
+          {completedExercises.map((ex) => {
             const reps = session?.[ex.key];
             if (!reps) return null;
             return (
@@ -183,7 +189,9 @@ function TodayContent({ date }: { date: Date }) {
           className="w-10 h-10"
           style={{ animation: 'bounce-in 600ms ease-out backwards' }}
         />
-        <h1 className="text-2xl font-bold tracking-tight">TRAINING</h1>
+        <h1 className="text-2xl font-bold tracking-tight uppercase">
+          {workoutType === 'push' ? 'PUSH' : workoutType === 'pull' ? 'PULL' : workoutType === 'legs' ? 'LEGS' : 'TRAINING'}
+        </h1>
         <p className="text-sm text-muted-foreground">{formatDisplayDate(date)}</p>
       </div>
 
@@ -218,7 +226,7 @@ function TodayContent({ date }: { date: Date }) {
       >
         <Smartphone className="w-4 h-4" />
         <span className="text-sm">
-          {isPaired ? 'Synced with Desktop' : 'Pair with Desktop'}
+          {isPaired ? 'Paired with Desktop' : 'Pair with Desktop'}
         </span>
       </button>
     </div>

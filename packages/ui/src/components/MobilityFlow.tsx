@@ -2,10 +2,10 @@
 
 import { useCallback } from 'react';
 import { Pause, SkipForward } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { MobilityExercise } from '@/lib/types';
-import { ExerciseDemo } from '@/components/ExerciseDemo';
+import { Button } from './ui/button';
+import { Progress } from './ui/progress';
+import { MobilityExercise } from '@traindaily/core';
+import { ExerciseDemo } from './ExerciseDemo';
 
 interface MobilityFlowProps {
   exercise: MobilityExercise;

@@ -2,23 +2,27 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Dumbbell, Play, CheckCircle, Calendar, Smartphone, Flame, ChartBar } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@traindaily/ui';
 import { useRouter } from 'next/navigation';
-import { ExerciseScreen } from './ExerciseScreen';
-import { RestTimer } from './RestTimer';
-import { ExerciseTransition } from './ExerciseTransition';
-import { SessionComplete } from './SessionComplete';
-import { RestDayScreen } from './RestDayScreen';
-import { Onboarding } from './Onboarding';
-import { WeeklySplit } from './WeeklySplit';
-import { HistoryScreen } from './HistoryScreen';
+import {
+  ExerciseScreen,
+  RestTimer,
+  ExerciseTransition,
+  SessionComplete,
+  RestDayScreen,
+  Onboarding,
+  WeeklySplit,
+  HistoryScreen,
+} from '@traindaily/ui';
 import { useWorkout } from '@/hooks/useWorkout';
 import { useSchedule } from '@/hooks/useSchedule';
 import { useDevTools } from '@/lib/devtools';
+import { useMobility } from '@/hooks/useMobility';
 import { formatDisplayDate, getWeekNumber } from '@/lib/workout-utils';
 import { getFirstSessionDate } from '@/lib/storage';
 import { getWorkoutType, getTrainingStreak } from '@/lib/schedule';
 import { PUSH_EXERCISES, PULL_EXERCISES, LEGS_EXERCISES } from '@/lib/constants';
+import { syncWithDesktop, getStoredDesktopInfo } from '@/lib/sync-client';
 
 const ONBOARDING_KEY = 'traindaily_onboarding_completed';
 
@@ -66,6 +70,7 @@ function TodayContent({ date }: { date: Date }) {
   const router = useRouter();
   const schedule = useSchedule(date);
   const workout = useWorkout(date);
+  const mobility = useMobility();
   const firstSession = getFirstSessionDate();
   const weekNumber = getWeekNumber(firstSession, date);
   const workoutType = getWorkoutType(date);
@@ -102,6 +107,7 @@ function TodayContent({ date }: { date: Date }) {
         nextTraining={schedule.nextTraining}
         weekCompleted={schedule.weekProgress.completed}
         weekTotal={schedule.weekProgress.total}
+        mobility={mobility}
       />
     );
   }
@@ -200,12 +206,16 @@ function TodayContent({ date }: { date: Date }) {
   }
 
   if (workout.state === 'complete') {
+    const onSync = getStoredDesktopInfo()
+      ? () => syncWithDesktop()
+      : undefined;
     return (
       <SessionComplete
         mode="workout"
         sessionReps={workout.sessionReps}
         data={workout.data}
         date={date}
+        onSync={onSync}
       />
     );
   }

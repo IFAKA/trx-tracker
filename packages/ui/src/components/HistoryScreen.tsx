@@ -4,10 +4,8 @@ import { useMemo } from 'react';
 import { ArrowLeft, Trophy } from 'lucide-react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { format, startOfWeek, addDays, subWeeks } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { WorkoutData, WorkoutType } from '@/lib/types';
-import { PUSH_EXERCISES, PULL_EXERCISES, LEGS_EXERCISES, EXERCISES } from '@/lib/constants';
-import { formatDateKey } from '@/lib/workout-utils';
+import { cn } from '../lib/utils';
+import { WorkoutData, WorkoutType, PUSH_EXERCISES, PULL_EXERCISES, LEGS_EXERCISES, EXERCISES, formatDateKey } from '@traindaily/core';
 
 interface HistoryScreenProps {
   data: WorkoutData;

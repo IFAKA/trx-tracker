@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Pause, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { MicroBreakExercise } from '@/lib/types';
-import { ExerciseDemo } from '@/components/ExerciseDemo';
-import { playBreakStart, playCountdownTick, playBreakDone } from '@/lib/audio';
+import { Button } from './ui/button';
+import { MicroBreakExercise } from '@traindaily/core';
+import { ExerciseDemo } from './ExerciseDemo';
+import { playBreakStart, playCountdownTick, playBreakDone } from '../lib/audio';
 
 interface MicroBreakProps {
   exercise: MicroBreakExercise;

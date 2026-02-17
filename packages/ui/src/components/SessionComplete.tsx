@@ -2,29 +2,32 @@
 
 import { useEffect, useState } from 'react';
 import { Trophy, TrendingUp, TrendingDown, Minus, Calendar, Loader2, Check, WifiOff } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { EXERCISES, MOBILITY_EXERCISES } from '@/lib/constants';
-import { WorkoutData } from '@/lib/types';
-import { formatDateKey } from '@/lib/workout-utils';
-import { getTrainingDaysCompletedThisWeek } from '@/lib/schedule';
-import { syncWithDesktop, getStoredDesktopInfo } from '@/lib/sync-client';
+import { Card, CardContent } from './ui/card';
+import { Progress } from './ui/progress';
+import { EXERCISES, MOBILITY_EXERCISES, WorkoutData, formatDateKey, getTrainingDaysCompletedThisWeek } from '@traindaily/core';
 
 type SessionCompleteProps =
-  | { mode: 'workout'; sessionReps: Record<string, number[]>; data: WorkoutData; date: Date }
+  | {
+      mode: 'workout';
+      sessionReps: Record<string, number[]>;
+      data: WorkoutData;
+      date: Date;
+      /** Optional: called to sync with desktop after session. PWA-only. */
+      onSync?: () => Promise<{ success: boolean }>;
+    }
   | { mode: 'mobility'; date: Date; weekCompleted: number; weekTotal: number; nextTraining: string | null };
 
 export function SessionComplete(props: SessionCompleteProps) {
   const isWorkout = props.mode === 'workout';
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'failed'>('idle');
 
-  // Sync with desktop after session
+  // Sync with desktop after session (PWA only, when onSync is provided)
   useEffect(() => {
     if (!isWorkout) return;
-    const desktop = getStoredDesktopInfo();
-    if (!desktop) return;
+    const onSync = (props as Extract<typeof props, { mode: 'workout' }>).onSync;
+    if (!onSync) return;
     setSyncStatus('syncing');
-    syncWithDesktop().then(({ success }) => {
+    onSync().then(({ success }) => {
       setSyncStatus(success ? 'success' : 'failed');
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -33,22 +36,29 @@ export function SessionComplete(props: SessionCompleteProps) {
   // Detect difficulty increase: any exercise maxed out all sets at 20+ reps
   const maxedExercises = isWorkout
     ? EXERCISES.filter((ex) => {
-        const reps = props.sessionReps[ex.key];
+        const reps = (props as Extract<typeof props, { mode: 'workout' }>).sessionReps[ex.key];
         return reps && reps.length > 0 && reps.every((r) => r >= 20);
       })
     : [];
   const hasDifficultyIncrease = maxedExercises.length > 0;
 
   const weekProgress = isWorkout
-    ? getTrainingDaysCompletedThisWeek(props.date, props.data)
-    : { completed: props.weekCompleted, total: props.weekTotal };
+    ? getTrainingDaysCompletedThisWeek(
+        (props as Extract<typeof props, { mode: 'workout' }>).date,
+        (props as Extract<typeof props, { mode: 'workout' }>).data
+      )
+    : {
+        completed: (props as Extract<typeof props, { mode: 'mobility' }>).weekCompleted,
+        total: (props as Extract<typeof props, { mode: 'mobility' }>).weekTotal,
+      };
 
   // Build exercise cards
   let cards: React.ReactNode[];
 
   if (isWorkout) {
-    const dateKey = formatDateKey(props.date);
-    const { sessionReps, data } = props;
+    const workoutProps = props as Extract<typeof props, { mode: 'workout' }>;
+    const dateKey = formatDateKey(workoutProps.date);
+    const { sessionReps, data } = workoutProps;
 
     // Get previous session for comparison
     const prevDates = Object.keys(data)
@@ -63,7 +73,7 @@ export function SessionComplete(props: SessionCompleteProps) {
     });
 
     cards = exercisesWithData.map((ex, index) => {
-      const reps = sessionReps[ex.key] || data[formatDateKey(props.date)]?.[ex.key];
+      const reps = sessionReps[ex.key] || data[formatDateKey(workoutProps.date)]?.[ex.key];
       if (!reps) return null;
       const prevReps = prevSession?.[ex.key];
       const improved =
@@ -127,12 +137,15 @@ export function SessionComplete(props: SessionCompleteProps) {
     ));
   }
 
+  const workoutProps = isWorkout ? (props as Extract<typeof props, { mode: 'workout' }>) : null;
   const cardCount = isWorkout
     ? EXERCISES.filter((ex) => {
-        const reps = props.sessionReps[ex.key] || props.data[formatDateKey(props.date)]?.[ex.key];
+        const reps = workoutProps!.sessionReps[ex.key] || workoutProps!.data[formatDateKey(workoutProps!.date)]?.[ex.key];
         return !!reps;
       }).length
     : MOBILITY_EXERCISES.length;
+
+  const mobilityProps = !isWorkout ? (props as Extract<typeof props, { mode: 'mobility' }>) : null;
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-background p-6 gap-6">
@@ -156,12 +169,12 @@ export function SessionComplete(props: SessionCompleteProps) {
             ↑ DIFFICULTY UP NEXT SESSION
           </p>
         )}
-        {!isWorkout && props.nextTraining && (
+        {!isWorkout && mobilityProps?.nextTraining && (
           <p
             className="text-sm text-muted-foreground"
             style={{ animation: 'slide-up-in 500ms ease-out 400ms backwards' }}
           >
-            NEXT: {props.nextTraining}
+            NEXT: {mobilityProps.nextTraining}
           </p>
         )}
       </div>

@@ -13,6 +13,7 @@ export default defineConfig(async () => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "next/navigation": path.resolve(__dirname, "./src/lib/next-navigation.ts"),
+      "@traindaily/ui": path.resolve(__dirname, "../../packages/ui"),
     },
   },
 

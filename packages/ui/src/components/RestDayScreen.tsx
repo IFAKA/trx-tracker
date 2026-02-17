@@ -1,20 +1,35 @@
 'use client';
 
 import { Moon, Play, Calendar } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from './ui/button';
 import { MobilityFlow } from './MobilityFlow';
 import { SessionComplete } from './SessionComplete';
-import { useMobility } from '@/hooks/useMobility';
+import { MobilityExercise } from '@traindaily/core';
+
+/** Matches the return type of useMobility in both apps */
+export interface MobilityHookState {
+  exercise: MobilityExercise;
+  exerciseIndex: number;
+  totalExercises: number;
+  timer: number;
+  side: 'left' | 'right' | null;
+  isActive: boolean;
+  isPaused: boolean;
+  isComplete: boolean;
+  startMobility: () => void;
+  skip: () => void;
+  pause: () => void;
+  resume: () => void;
+}
 
 interface RestDayScreenProps {
   nextTraining: string | null;
   weekCompleted: number;
   weekTotal: number;
+  mobility: MobilityHookState;
 }
 
-export function RestDayScreen({ nextTraining, weekCompleted, weekTotal }: RestDayScreenProps) {
-  const mobility = useMobility();
-
+export function RestDayScreen({ nextTraining, weekCompleted, weekTotal, mobility }: RestDayScreenProps) {
   if (mobility.isActive) {
     return (
       <MobilityFlow

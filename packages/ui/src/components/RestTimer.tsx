@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Timer, SkipForward, X, Pause, Play, RotateCcw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { REST_DURATION } from '@/lib/constants';
+import { Button } from './ui/button';
+import { REST_DURATION } from '@traindaily/core';
 
 interface RestTimerProps {
   seconds: number;

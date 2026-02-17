@@ -2,10 +2,8 @@
 
 import { startOfWeek, addDays, isSameDay, format } from 'date-fns';
 import { CheckCircle2, Circle, Dumbbell } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { getWorkoutType } from '@/lib/schedule';
-import { formatDateKey } from '@/lib/workout-utils';
-import { WorkoutData, WorkoutType } from '@/lib/types';
+import { cn } from '../lib/utils';
+import { getWorkoutType, formatDateKey, WorkoutData, WorkoutType } from '@traindaily/core';
 
 interface WeeklySplitProps {
   currentDate: Date;

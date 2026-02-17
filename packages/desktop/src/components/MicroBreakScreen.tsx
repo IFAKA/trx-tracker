@@ -1,6 +1,6 @@
 'use client';
 
-import { MicroBreak } from './MicroBreak';
+import { MicroBreak } from '@traindaily/ui';
 import { invoke } from '@tauri-apps/api/core';
 import { MicroBreakExercise } from '../lib/types';
 
