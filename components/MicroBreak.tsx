@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MicroBreakExercise } from '@/lib/types';
 import { ExerciseDemo } from '@/components/ExerciseDemo';
+import { playBreakStart, playCountdownTick, playBreakDone } from '@/lib/audio';
 
 interface MicroBreakProps {
   exercise: MicroBreakExercise;
@@ -15,16 +16,26 @@ export function MicroBreak({ exercise, onDismiss }: MicroBreakProps) {
   const [timer, setTimer] = useState(exercise.duration);
   const [canDismiss, setCanDismiss] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownPlayedRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
+    playBreakStart();
+
     intervalRef.current = setInterval(() => {
       setTimer((t) => {
         if (t <= 1) {
           clearInterval(intervalRef.current!);
           setCanDismiss(true);
+          playBreakDone();
           return 0;
         }
-        return t - 1;
+        // Countdown ticks at 3, 2, 1
+        const next = t - 1;
+        if (next <= 3 && next > 0 && !countdownPlayedRef.current.has(next)) {
+          countdownPlayedRef.current.add(next);
+          playCountdownTick(next);
+        }
+        return next;
       });
     }, 1000);
 

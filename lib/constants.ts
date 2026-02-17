@@ -54,6 +54,7 @@ export const EXERCISES: Exercise[] = [
 
 export const STORAGE_KEY = 'trx_tracker_sessions';
 export const FIRST_SESSION_KEY = 'trx_tracker_first_session';
+export const MOBILITY_DONE_KEY = 'trx_tracker_mobility_done';
 
 export const REST_DURATION = 90; // seconds
 

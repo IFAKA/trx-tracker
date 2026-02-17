@@ -7,9 +7,13 @@ import { loadWorkoutData, saveSession, getFirstSessionDate, setFirstSessionDate 
 import { formatDateKey, getWeekNumber, getSetsForWeek } from '@/lib/workout-utils';
 import { getTargets } from '@/lib/progression';
 import {
+  unlockAudio,
+  playStart,
   playSetLogged,
   playCountdownTick,
   playRestComplete,
+  playNextExercise,
+  playSkip,
   playSessionComplete,
 } from '@/lib/audio';
 
@@ -117,6 +121,7 @@ export function useWorkout(date: Date) {
       const nextExercise = exerciseIndex + 1;
       if (nextExercise < EXERCISES.length) {
         // Show transition interstitial
+        playNextExercise();
         setNextExerciseName(EXERCISES[nextExercise].name);
         setExerciseIndex(nextExercise);
         setCurrentSet(0);
@@ -152,6 +157,8 @@ export function useWorkout(date: Date) {
   }, [dateKey, weekNumber, sessionReps, releaseWakeLock]);
 
   const startWorkout = useCallback(() => {
+    unlockAudio();
+    playStart();
     setExerciseIndex(0);
     setCurrentSet(0);
     setSessionReps({});
@@ -229,6 +236,7 @@ export function useWorkout(date: Date) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    playSkip();
     advanceAfterRest();
   }, [advanceAfterRest]);
 

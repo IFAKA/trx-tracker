@@ -1,19 +1,41 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MOBILITY_EXERCISES } from '@/lib/constants';
+import { MOBILITY_EXERCISES, MOBILITY_DONE_KEY } from '@/lib/constants';
+import { formatDateKey } from '@/lib/workout-utils';
+import { unlockAudio, playStart, playCountdownTick, playNextExercise, playSkip, playMobilityComplete } from '@/lib/audio';
+
+function isMobilityDoneToday(): boolean {
+  try {
+    const saved = localStorage.getItem(MOBILITY_DONE_KEY);
+    return saved === formatDateKey(new Date());
+  } catch {
+    return false;
+  }
+}
+
+function saveMobilityDone(): void {
+  try {
+    localStorage.setItem(MOBILITY_DONE_KEY, formatDateKey(new Date()));
+  } catch {
+    // ignore
+  }
+}
 
 export function useMobility() {
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [timer, setTimer] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [side, setSide] = useState<'left' | 'right' | null>(null);
-  const [isComplete, setIsComplete] = useState(false);
+  const [isComplete, setIsComplete] = useState(() => isMobilityDoneToday());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownPlayedRef = useRef<Set<string>>(new Set());
 
   const exercise = MOBILITY_EXERCISES[exerciseIndex];
 
   const startMobility = useCallback(() => {
+    unlockAudio();
+    playStart();
     setExerciseIndex(0);
     setIsComplete(false);
     const first = MOBILITY_EXERCISES[0];
@@ -25,7 +47,16 @@ export function useMobility() {
   useEffect(() => {
     if (isActive && timer > 0) {
       timerRef.current = setInterval(() => {
-        setTimer((t) => t - 1);
+        setTimer((t) => {
+          // Countdown ticks at 3, 2, 1
+          const next = t - 1;
+          const tickKey = `${exerciseIndex}-${side}-${next}`;
+          if (next <= 3 && next > 0 && !countdownPlayedRef.current.has(tickKey)) {
+            countdownPlayedRef.current.add(tickKey);
+            playCountdownTick(next);
+          }
+          return next;
+        });
       }, 1000);
       return () => {
         if (timerRef.current) clearInterval(timerRef.current);
@@ -36,12 +67,14 @@ export function useMobility() {
       // Advance
       if (exercise?.sides && side === 'left') {
         // Switch to right side
+        playNextExercise();
         setSide('right');
         setTimer(exercise.duration);
       } else {
         // Next exercise
         const next = exerciseIndex + 1;
         if (next < MOBILITY_EXERCISES.length) {
+          playNextExercise();
           setExerciseIndex(next);
           const nextEx = MOBILITY_EXERCISES[next];
           setTimer(nextEx.duration);
@@ -49,6 +82,8 @@ export function useMobility() {
         } else {
           setIsActive(false);
           setIsComplete(true);
+          saveMobilityDone();
+          playMobilityComplete();
         }
       }
     }
@@ -56,6 +91,7 @@ export function useMobility() {
   }, [isActive, timer]);
 
   const skip = useCallback(() => {
+    playSkip();
     setTimer(0);
   }, []);
 
