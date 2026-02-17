@@ -1,5 +1,4 @@
 import { WorkoutData, ExerciseKey } from './types';
-import { EXERCISES, DEFAULT_TARGETS_REPS, DEFAULT_TARGETS_PLANK } from './constants';
 import { getPreviousSessionDate, getSetsForWeek } from './workout-utils';
 
 export function getTargets(
@@ -8,101 +7,56 @@ export function getTargets(
   currentDate: Date,
   data: WorkoutData
 ): number[] {
-  const exercise = EXERCISES.find((e) => e.key === exerciseKey)!;
   const sets = getSetsForWeek(weekNumber);
   const prevDateKey = getPreviousSessionDate(currentDate, data);
 
+  // Default starting targets: 3-4 sets of 8 reps
+  const baseTarget = 8;
+
   if (!prevDateKey) {
-    // First session ever
-    const defaults: number[] =
-      exercise.unit === 'seconds'
-        ? [...DEFAULT_TARGETS_PLANK]
-        : [...DEFAULT_TARGETS_REPS];
-    if (sets === 3) {
-      defaults.push(defaults[defaults.length - 1] - 2);
-    }
-    return defaults;
+    // First session ever - start with 8 reps
+    return Array(sets).fill(baseTarget);
   }
 
   const prevSession = data[prevDateKey];
   const prevReps = prevSession?.[exerciseKey];
 
   if (!prevReps || prevReps.length === 0) {
-    const defaults: number[] =
-      exercise.unit === 'seconds'
-        ? [...DEFAULT_TARGETS_PLANK]
-        : [...DEFAULT_TARGETS_REPS];
-    if (sets === 3) defaults.push(defaults[defaults.length - 1] - 2);
-    return defaults;
+    return Array(sets).fill(baseTarget);
   }
 
-  // Get previous targets by looking at what the target was
-  // We derive targets from the previous performance
-  const prevTargets = getPreviousTargets(exerciseKey, prevDateKey, data);
-  const increment = exercise.unit === 'seconds' ? 5 : 1;
+  // Progressive overload logic for 8-12 rep range
+  // Goal: increase reps until all sets hit 12, then suggest difficulty increase
 
-  // Check if all sets hit target
-  const prevSetsCount = Math.min(prevReps.length, prevTargets.length);
-  let allHitTarget = true;
-  let anyWayBelow = false;
+  // Check if all previous sets hit 12+ reps (time to increase difficulty)
+  const allHit12Plus = prevReps.every((r) => r >= 12);
 
-  for (let i = 0; i < prevSetsCount; i++) {
-    if (prevReps[i] < prevTargets[i]) allHitTarget = false;
-    if (prevReps[i] < prevTargets[i] - 3) anyWayBelow = true;
+  if (allHit12Plus) {
+    // Reset to 8 reps with harder variation
+    // Note: User needs to manually increase difficulty (e.g., harder angle, slower tempo)
+    return Array(sets).fill(baseTarget);
   }
 
-  let newTarget: number;
-  if (allHitTarget) {
-    newTarget = prevTargets[0] + increment;
-  } else if (anyWayBelow) {
-    newTarget = prevTargets[0]; // keep same
-  } else {
-    newTarget = prevTargets[0]; // keep same
-  }
+  // Otherwise, use previous performance as targets
+  // If user hit target on previous sets, maintain that target
+  const avgPrevReps = Math.floor(prevReps.reduce((sum, r) => sum + r, 0) / prevReps.length);
+  const newTarget = Math.min(12, Math.max(baseTarget, avgPrevReps));
 
-  // Build targets array for current sets count
-  if (sets === 2) {
-    return [newTarget, Math.max(1, newTarget - 2)];
-  }
-  return [newTarget, Math.max(1, newTarget - 2), Math.max(1, newTarget - 4)];
-}
-
-function getPreviousTargets(
-  exerciseKey: ExerciseKey,
-  dateKey: string,
-  data: WorkoutData
-): number[] {
-  // Walk backwards to reconstruct target chain
-  // For simplicity, use the reps as approximate targets
-  const session = data[dateKey];
-  const reps = session?.[exerciseKey];
-  if (!reps) {
-    const exercise = EXERCISES.find((e) => e.key === exerciseKey)!;
-    return exercise.unit === 'seconds'
-      ? [...DEFAULT_TARGETS_PLANK]
-      : [...DEFAULT_TARGETS_REPS];
-  }
-  // Use max rep from first set as the target baseline
-  return reps.map((_, i) => {
-    if (i === 0) return reps[0];
-    return Math.max(1, reps[0] - i * 2);
-  });
+  return Array(sets).fill(newTarget);
 }
 
 export function shouldIncreaseDifficulty(
   exerciseKey: ExerciseKey,
   data: WorkoutData
 ): boolean {
-  const exercise = EXERCISES.find((e) => e.key === exerciseKey)!;
-  if (exercise.unit === 'seconds') return false;
-
-  // Check last session
+  // Check last session for this exercise
   const dates = Object.keys(data).sort().reverse();
   for (const d of dates) {
     const session = data[d];
     const reps = session?.[exerciseKey];
     if (reps && reps.length > 0) {
-      return reps.every((r) => r >= 15);
+      // If all sets hit 12+ reps, time to increase difficulty
+      return reps.every((r) => r >= 12);
     }
   }
   return false;

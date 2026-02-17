@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Dumbbell, Play, CheckCircle, Calendar, Smartphone } from 'lucide-react';
+import { Dumbbell, Play, CheckCircle, Calendar, Smartphone, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { ExerciseScreen } from './ExerciseScreen';
@@ -10,12 +10,14 @@ import { ExerciseTransition } from './ExerciseTransition';
 import { SessionComplete } from './SessionComplete';
 import { RestDayScreen } from './RestDayScreen';
 import { Onboarding } from './Onboarding';
+import { WeeklySplit } from './WeeklySplit';
 import { useWorkout } from '@/hooks/useWorkout';
 import { useSchedule } from '@/hooks/useSchedule';
 import { useDevTools } from '@/lib/devtools';
 import { formatDisplayDate, getWeekNumber } from '@/lib/workout-utils';
 import { getFirstSessionDate } from '@/lib/storage';
-import { EXERCISES } from '@/lib/constants';
+import { getWorkoutType, getTrainingStreak } from '@/lib/schedule';
+import { PUSH_EXERCISES, PULL_EXERCISES, LEGS_EXERCISES } from '@/lib/constants';
 
 const ONBOARDING_KEY = 'traindaily_onboarding_completed';
 
@@ -65,6 +67,11 @@ function TodayContent({ date }: { date: Date }) {
   const workout = useWorkout(date);
   const firstSession = getFirstSessionDate();
   const weekNumber = getWeekNumber(firstSession, date);
+  const workoutType = getWorkoutType(date);
+  const streak = getTrainingStreak(date, workout.data);
+
+  // Get current day's exercises
+  const EXERCISES = workoutType === 'push' ? PUSH_EXERCISES : workoutType === 'pull' ? PULL_EXERCISES : workoutType === 'legs' ? LEGS_EXERCISES : [];
 
   // Check if desktop is paired
   const [isPaired, setIsPaired] = useState(false);
@@ -89,10 +96,17 @@ function TodayContent({ date }: { date: Date }) {
   // Already done
   if (schedule.isDone && workout.state === 'idle') {
     const session = workout.data[schedule.dateKey];
+    const sessionWorkoutType = session?.workout_type || workoutType;
+    const completedExercises = sessionWorkoutType === 'push'
+      ? PUSH_EXERCISES
+      : sessionWorkoutType === 'pull'
+      ? PULL_EXERCISES
+      : LEGS_EXERCISES;
+
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-6">
         <CheckCircle className="w-16 h-16 text-green-500" />
-        <h1 className="text-xl font-bold tracking-tight">DONE</h1>
+        <h1 className="text-xl font-bold tracking-tight uppercase">{sessionWorkoutType} DONE</h1>
         <p className="text-sm text-muted-foreground">{formatDisplayDate(date)}</p>
 
         {/* Quick summary */}
@@ -101,7 +115,7 @@ function TodayContent({ date }: { date: Date }) {
             <span>Exercise</span>
             <span>Sets</span>
           </div>
-          {EXERCISES.map((ex) => {
+          {completedExercises.map((ex) => {
             const reps = session?.[ex.key];
             if (!reps) return null;
             return (
@@ -168,23 +182,34 @@ function TodayContent({ date }: { date: Date }) {
 
   // Idle — ready to start
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-8">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-6">
       <div className="flex flex-col items-center gap-3">
         <Dumbbell
           className="w-10 h-10"
           style={{ animation: 'bounce-in 600ms ease-out backwards' }}
         />
-        <h1 className="text-2xl font-bold tracking-tight">TRAINING</h1>
+        <h1 className="text-2xl font-bold tracking-tight uppercase text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-blue-400 to-green-400">
+          {workoutType === 'push' ? 'PUSH' : workoutType === 'pull' ? 'PULL' : 'LEGS'}
+        </h1>
         <p className="text-sm text-muted-foreground">{formatDisplayDate(date)}</p>
       </div>
 
       <div
-        className="flex items-center gap-2 text-sm text-muted-foreground"
+        className="flex items-center gap-3 text-sm text-muted-foreground"
         style={{ animation: 'stagger-in 400ms ease-out 200ms backwards' }}
       >
         <span className="font-mono">WEEK {weekNumber}</span>
         <span>·</span>
         <span className="font-mono">{workout.setsPerExercise} SETS</span>
+        {streak > 0 && (
+          <>
+            <span>·</span>
+            <div className="flex items-center gap-1">
+              <Flame className="w-4 h-4 text-orange-500" />
+              <span className="font-mono text-orange-500">{streak}</span>
+            </div>
+          </>
+        )}
       </div>
 
       <Button
@@ -195,17 +220,13 @@ function TodayContent({ date }: { date: Date }) {
         <Play className="w-10 h-10" />
       </Button>
 
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Calendar className="w-4 h-4" />
-        <span className="text-sm font-mono">
-          {schedule.weekProgress.completed}/{schedule.weekProgress.total} this week
-        </span>
-      </div>
+      {/* Weekly Split Schedule */}
+      <WeeklySplit currentDate={date} data={workout.data} />
 
       {/* Sync button */}
       <button
         onClick={() => router.push('/pair')}
-        className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all mt-4"
+        className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all"
       >
         <Smartphone className="w-4 h-4" />
         <span className="text-sm">

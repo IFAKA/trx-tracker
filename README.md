@@ -98,8 +98,10 @@ traindaily/
 ```
 
 **Desktop Features**
-- Full workout tracking with 7 exercises, progressive overload, and rest timers
-- App blocker: Full-screen overlay on training days (Mon/Wed/Fri) until workout logged
+- 6-day PPL split: 12 exercises (bodyweight + TRX)
+- Progressive overload: 8-12 rep hypertrophy range
+- Rest timers: 90-120 seconds between sets
+- App blocker: Full-screen overlay on training days until workout logged
 - Hourly micro-breaks with mobility exercises (deferred during calls)
 - Mic detection: Detects Teams/Zoom/Meet calls, skips breaks automatically
 - Local sync server: HTTPS server for syncing with mobile
@@ -113,10 +115,49 @@ traindaily/
 - Auto-sync: Bidirectional sync with desktop over local network
 - Installable: Add to home screen
 
-**Progressive Overload Algorithm**
-- Weeks 1-4: 2 sets per exercise
-- Weeks 5+: 3 sets per exercise
-- Auto-increments targets when all sets hit previous target
+**Training Program: 6-Day Push/Pull/Legs Split**
+
+**Schedule**
+- Monday: Push (chest, shoulders, triceps)
+- Tuesday: Pull (back, biceps)
+- Wednesday: Legs (quads, hamstrings, calves)
+- Thursday: Push
+- Friday: Pull
+- Saturday: Legs
+- Sunday: Rest
+
+**Push Day (4 exercises)**
+1. TRX Push-ups
+2. Pike Push-ups
+3. TRX Tricep Extensions
+4. Regular Push-ups
+
+**Pull Day (4 exercises)**
+1. TRX Rows
+2. TRX Face Pulls
+3. TRX Bicep Curls
+4. Inverted Rows
+
+**Legs Day (4 exercises)**
+1. Bulgarian Split Squats
+2. Pistol Squat Progressions (TRX-assisted)
+3. TRX Hamstring Curls
+4. Calf Raises
+
+**Progressive Overload System**
+- Weeks 1-2: 3 sets per exercise
+- Weeks 3+: 4 sets per exercise
+- Rep range: 8-12 reps per set
+- When all sets hit 12+ reps → increase difficulty (angle, tempo, ROM)
+- Rest: 90-120 seconds between sets
+- Session duration: 30-40 minutes
+- Streak tracking: consecutive training days
+
+**Progression Paths**
+- TRX exercises: Adjust body angle (closer to horizontal = harder)
+- Push-ups: Regular → Deficit → One-arm progressions
+- Pistol squats: Box-assisted → TRX-assisted → Freestanding
+- All exercises: Control tempo (3-1-3) for added difficulty
 
 **Sync Protocol**
 - QR code pairing (one-time setup)

@@ -1,6 +1,5 @@
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, differenceInWeeks } from 'date-fns';
+import { format, endOfWeek, eachDayOfInterval, differenceInWeeks } from 'date-fns';
 import { WorkoutData, ComparisonResult, WeeklyStats, ExerciseKey } from './types';
-import { TRAINING_DAYS } from './constants';
 
 export function formatDateKey(date: Date): string {
   return format(date, 'yyyy-MM-dd');
@@ -18,7 +17,8 @@ export function getWeekNumber(firstSessionDate: string | null, currentDate: Date
 }
 
 export function getSetsForWeek(weekNumber: number): number {
-  return weekNumber <= 4 ? 2 : 3;
+  // Week 1-2: 3 sets, Week 3+: 4 sets
+  return weekNumber <= 2 ? 3 : 4;
 }
 
 export function getPreviousSessionDate(
@@ -88,9 +88,7 @@ export function getWeeklyStats(
   };
 }
 
-export function getTrainingDaysThisWeek(date: Date): number {
-  const start = startOfWeek(date, { weekStartsOn: 1 });
-  const end = endOfWeek(date, { weekStartsOn: 1 });
-  const days = eachDayOfInterval({ start, end });
-  return days.filter((d) => TRAINING_DAYS.includes(d.getDay() as 1 | 3 | 5)).length;
+export function getTrainingDaysThisWeek(): number {
+  // 6 training days per week (all days except 1 rest day)
+  return 6;
 }

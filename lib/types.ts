@@ -1,11 +1,27 @@
-export type ExerciseKey =
-  | 'inverted_row'
-  | 'single_arm_row'
+// Push exercises
+export type PushExerciseKey =
+  | 'trx_pushup'
   | 'pike_pushup'
+  | 'tricep_extension'
+  | 'regular_pushup';
+
+// Pull exercises
+export type PullExerciseKey =
+  | 'trx_row'
   | 'face_pull'
-  | 'pushup'
-  | 'wall_lateral_raise'
-  | 'plank';
+  | 'bicep_curl'
+  | 'inverted_row';
+
+// Legs exercises
+export type LegsExerciseKey =
+  | 'bulgarian_split_squat'
+  | 'pistol_squat_progression'
+  | 'trx_hamstring_curl'
+  | 'calf_raise';
+
+export type ExerciseKey = PushExerciseKey | PullExerciseKey | LegsExerciseKey;
+
+export type WorkoutType = 'push' | 'pull' | 'legs' | 'rest';
 
 export interface Exercise {
   key: ExerciseKey;
@@ -13,6 +29,7 @@ export interface Exercise {
   unit: 'reps' | 'seconds';
   instruction: string;
   youtubeId?: string;
+  workoutType: Exclude<WorkoutType, 'rest'>;
 }
 
 export type WorkoutSession = {
@@ -20,6 +37,7 @@ export type WorkoutSession = {
 } & {
   logged_at: string;
   week_number: number;
+  workout_type: Exclude<WorkoutType, 'rest'>;
 };
 
 export interface WorkoutData {

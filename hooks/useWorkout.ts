@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { WorkoutState, WorkoutData, ExerciseKey } from '@/lib/types';
-import { EXERCISES, REST_DURATION } from '@/lib/constants';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { WorkoutState, WorkoutData, ExerciseKey, Exercise } from '@/lib/types';
+import { PUSH_EXERCISES, PULL_EXERCISES, LEGS_EXERCISES, REST_DURATION } from '@/lib/constants';
 import { loadWorkoutData, saveSession, getFirstSessionDate, setFirstSessionDate } from '@/lib/storage';
 import { formatDateKey, getWeekNumber, getSetsForWeek } from '@/lib/workout-utils';
 import { getTargets } from '@/lib/progression';
 import { useDevTools, useDevToolsRegisterWorkout } from '@/lib/devtools';
+import { getWorkoutType } from '@/lib/schedule';
 import {
   unlockAudio,
   playStart,
@@ -37,13 +38,23 @@ export function useWorkout(date: Date) {
   const firstSession = getFirstSessionDate();
   const weekNumber = getWeekNumber(firstSession, date);
   const setsPerExercise = getSetsForWeek(weekNumber);
+  const workoutType = getWorkoutType(date);
+
+  // Get exercises for current workout type
+  const EXERCISES = useMemo<Exercise[]>(() => {
+    if (workoutType === 'push') return PUSH_EXERCISES;
+    if (workoutType === 'pull') return PULL_EXERCISES;
+    if (workoutType === 'legs') return LEGS_EXERCISES;
+    return []; // rest day
+  }, [workoutType]);
+
   const currentExercise = EXERCISES[exerciseIndex];
 
   const targets = currentExercise
     ? getTargets(currentExercise.key, weekNumber, date, data)
     : [];
 
-  const currentTarget = targets[currentSet] ?? targets[0] ?? 10;
+  const currentTarget = targets[currentSet] ?? targets[0] ?? 8;
 
   // Get previous session reps for comparison
   const getPreviousReps = useCallback(
@@ -145,6 +156,7 @@ export function useWorkout(date: Date) {
     const session: WorkoutData[string] = {
       logged_at: new Date().toISOString(),
       week_number: weekNumber,
+      workout_type: workoutType === 'rest' ? 'push' : workoutType, // fallback, should never be rest
     };
     for (const ex of EXERCISES) {
       if (sessionReps[ex.key]) {
@@ -157,7 +169,7 @@ export function useWorkout(date: Date) {
     setState('complete');
     playSessionComplete();
     releaseWakeLock();
-  }, [dateKey, weekNumber, sessionReps, releaseWakeLock]);
+  }, [dateKey, weekNumber, sessionReps, releaseWakeLock, EXERCISES, workoutType]);
 
   const startWorkout = useCallback(() => {
     unlockAudio();
@@ -201,6 +213,7 @@ export function useWorkout(date: Date) {
           const session: WorkoutData[string] = {
             logged_at: new Date().toISOString(),
             week_number: weekNumber,
+            workout_type: workoutType === 'rest' ? 'push' : workoutType,
           };
           for (const ex of EXERCISES) {
             if (finalReps[ex.key]) {
