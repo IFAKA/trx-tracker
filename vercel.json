@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd $VERCEL_PROJECT_ROOT && pnpm run build",
+  "installCommand": "cd $VERCEL_PROJECT_ROOT && pnpm install --filter=traindaily --filter=@traindaily/core --filter=@traindaily/design-system"
+}
