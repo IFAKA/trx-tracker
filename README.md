@@ -2,25 +2,83 @@
 
 A no-excuses workout tracker with native desktop app (macOS) and mobile PWA that sync over local network. Progressive overload, accountability features, and hourly micro-breaks.
 
-## What It Does
+---
 
-### Desktop App (macOS)
-- **Full workout tracking** with 7 exercises, progressive overload, and rest timers
-- **App blocker** - Full-screen overlay on training days (Mon/Wed/Fri) until workout logged
-- **Hourly micro-breaks** - Prompts for mobility exercises (deferred during calls)
-- **Mic detection** - Detects Teams/Zoom/Meet calls, skips breaks automatically
-- **Local sync server** - HTTPS server for syncing with mobile
-- **Multi-user support** - Works across macOS user accounts (personal ↔ work)
-- **SQLite storage** - All data stored locally at `/Users/Shared/TrainDaily/`
+## For Users
 
-### Mobile PWA
-- **Same workout features** as desktop (full parity)
-- **QR code pairing** - Scan once, syncs forever
-- **Offline support** - Works without desktop, syncs when connected
-- **Auto-sync** - Bidirectional sync with desktop over local network
-- **Installable** - Add to home screen for native-like experience
+**Desktop App (macOS)**
+Download the latest `.dmg` from [Releases](https://github.com/IFAKA/traindaily/releases) → The app's onboarding will guide you through setup.
 
-## Architecture
+**Mobile PWA**
+Visit [traindaily.vercel.app](https://traindaily.vercel.app) → Add to home screen for native-like experience.
+
+**Uninstall Desktop App**
+```bash
+sudo bash /Applications/TrainDaily.app/Contents/Resources/uninstall.sh
+```
+
+---
+
+## For Developers
+
+### Prerequisites
+
+**Desktop App Development**
+1. **Rust** (latest stable)
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   rustc --version  # Verify installation
+   ```
+
+2. **Node.js** (v18+) and pnpm
+   ```bash
+   # Install from https://nodejs.org
+   npm install -g pnpm
+   node --version && pnpm --version  # Verify
+   ```
+
+3. **macOS** (required for desktop app)
+   ```bash
+   xcode-select --install  # Xcode Command Line Tools
+   ```
+
+**PWA Development Only**
+- Node.js (v18+)
+- Any modern browser
+
+### Quick Start
+
+**Desktop App (Full Features)**
+```bash
+git clone https://github.com/IFAKA/traindaily.git
+cd traindaily
+pnpm install
+cd packages/desktop
+pnpm tauri dev  # Launches desktop app + creates SQLite DB at /Users/Shared/TrainDaily/
+```
+
+**Build Production DMG**
+```bash
+cd packages/desktop
+pnpm tauri build
+# Output: src-tauri/target/release/bundle/dmg/TrainDaily_*.dmg
+```
+
+**PWA Development**
+```bash
+git clone https://github.com/IFAKA/traindaily.git
+cd traindaily
+pnpm install
+pnpm dev  # Open http://localhost:3000
+```
+
+**Deploy PWA**
+```bash
+pnpm build
+vercel deploy --prod
+```
+
+### Architecture
 
 ```
 traindaily/
@@ -33,118 +91,57 @@ traindaily/
 └── lib/                   # Shared utilities
 ```
 
-## Prerequisites
+**Desktop Features**
+- Full workout tracking with 7 exercises, progressive overload, and rest timers
+- App blocker: Full-screen overlay on training days (Mon/Wed/Fri) until workout logged
+- Hourly micro-breaks with mobility exercises (deferred during calls)
+- Mic detection: Detects Teams/Zoom/Meet calls, skips breaks automatically
+- Local sync server: HTTPS server for syncing with mobile
+- Multi-user support: Works across macOS user accounts (personal ↔ work)
+- SQLite storage at `/Users/Shared/TrainDaily/`
 
-### For Desktop App Development
-1. **Rust** (latest stable)
-   - Install: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-   - Verify: `rustc --version`
+**Mobile PWA Features**
+- Same workout features as desktop (full parity)
+- QR code pairing: Scan once, syncs forever
+- Offline support: Works without desktop, syncs when connected
+- Auto-sync: Bidirectional sync with desktop over local network
+- Installable: Add to home screen
 
-2. **Node.js** (v18+) and pnpm
-   - Install Node: [nodejs.org](https://nodejs.org)
-   - Install pnpm: `npm install -g pnpm`
-   - Verify: `node --version && pnpm --version`
-
-3. **macOS** (required for desktop app)
-   - Xcode Command Line Tools: `xcode-select --install`
-
-### For PWA Development Only
-- Node.js (v18+)
-- Any modern browser
-
-## Setup
-
-### Option 1: Desktop App (Full Features)
-
-1. **Clone and install dependencies**
-   ```bash
-   git clone https://github.com/IFAKA/traindaily.git
-   cd traindaily
-   pnpm install
-   ```
-
-2. **Build and run desktop app**
-   ```bash
-   cd packages/desktop
-   pnpm tauri dev
-   ```
-
-   This will:
-   - Build the React frontend
-   - Compile the Rust backend
-   - Launch the desktop app
-   - Create SQLite database at `/Users/Shared/TrainDaily/`
-
-3. **Build production .dmg**
-   ```bash
-   cd packages/desktop
-   pnpm tauri build
-   ```
-
-   Output: `src-tauri/target/release/bundle/dmg/TrainDaily_*.dmg`
-
-4. **Pair mobile device**
-   - Open desktop app
-   - QR code appears on screen
-   - Scan with phone camera
-   - Automatic sync!
-
-### Option 2: PWA Only (No Desktop)
-
-1. **Clone and install**
-   ```bash
-   git clone https://github.com/IFAKA/traindaily.git
-   cd traindaily
-   pnpm install
-   ```
-
-2. **Run development server**
-   ```bash
-   pnpm dev
-   ```
-
-   Open [http://localhost:3000](http://localhost:3000)
-
-3. **Install on mobile**
-   - Visit `http://YOUR_COMPUTER_IP:3000` on phone
-   - Tap "Add to Home Screen"
-
-4. **Deploy to production**
-   ```bash
-   pnpm build
-   vercel deploy --prod
-   ```
-
-## Key Features
-
-### Progressive Overload
+**Progressive Overload Algorithm**
 - Weeks 1-4: 2 sets per exercise
 - Weeks 5+: 3 sets per exercise
-- Auto-increments targets when you hit all reps
+- Auto-increments targets when all sets hit previous target
 
-### Accountability
-- **Desktop only**: Full-screen blocker on training days
-- **Desktop only**: Can't close app until workout logged
-- **Both platforms**: Track weekly progress, view stats
-
-### Micro-Breaks (Desktop)
-- Prompts every hour with mobility exercise
-- 4 exercises: Wall slides, Thoracic rotation, Hip flexor stretch, Chest doorway stretch
-- Auto-deferred if microphone active (Teams/Zoom detection)
-
-### Sync (Desktop + Mobile)
+**Sync Protocol**
 - QR code pairing (one-time setup)
 - HTTPS with self-signed cert
 - Token-based authentication
 - Router-agnostic (survives IP changes)
 - Bidirectional (both devices can log workouts)
 
-## Development
+### Tech Stack
 
-### Monorepo Structure
+**Desktop (Tauri)**
+- Rust backend: Axum, Rustls, SQLite, CoreAudio
+- React frontend: TypeScript, Vite, Tailwind CSS v4
+- 15 Rust crates, 30+ npm packages
+
+**Core Package**
+- Pure TypeScript (no platform dependencies)
+- Progressive overload algorithm (tested)
+- Storage abstraction (works with SQLite, localStorage, AsyncStorage)
+
+**PWA**
+- Next.js 16 (App Router) + React 19
+- Tailwind CSS v4 with OKLCh colors
+- shadcn/ui components
+- Web Audio, Wake Lock, Vibration APIs
+
+### Development Commands
 
 ```bash
-pnpm install              # Install all dependencies (root + all packages)
+# Install all dependencies (root + all packages)
+pnpm install
 
 # Desktop app
 cd packages/desktop
@@ -177,42 +174,10 @@ npx playwright test       # Run all e2e tests
 npx playwright test --ui  # Run with UI
 ```
 
-### Tech Stack
+### Project Structure
 
-**Desktop (Tauri)**
-- Rust backend: Axum, Rustls, SQLite, CoreAudio
-- React frontend: TypeScript, Vite, Tailwind CSS v4
-- 15 Rust crates, 30+ npm packages
-
-**Core Package**
-- Pure TypeScript (no platform dependencies)
-- Progressive overload algorithm (tested)
-- Storage abstraction (works with SQLite, localStorage, AsyncStorage)
-
-**PWA**
-- Next.js 16 (App Router) + React 19
-- Tailwind CSS v4 with OKLCh colors
-- shadcn/ui components
-- Web Audio, Wake Lock, Vibration APIs
-
-## Uninstall (Desktop)
-
-Removes all traces (app, data, certificates):
-
-```bash
-sudo bash /Applications/TrainDaily.app/Contents/Resources/uninstall.sh
+**Rust Backend** (`packages/desktop/src-tauri/src/`)
 ```
-
-Or manually:
-```bash
-sudo rm -rf /Applications/TrainDaily.app
-sudo rm -rf /Users/Shared/TrainDaily
-```
-
-## Folder Structure
-
-```
-packages/desktop/src-tauri/src/
 ├── lib.rs              # App entry, spawns 3 background tasks
 ├── commands.rs         # 8 Tauri commands exposed to frontend
 ├── db/mod.rs          # SQLite wrapper
@@ -221,8 +186,10 @@ packages/desktop/src-tauri/src/
 ├── mic/mod.rs         # CoreAudio mic detection (macOS)
 ├── blocker/mod.rs     # App blocker (training day enforcement)
 └── overlay/mod.rs     # Micro-break system (hourly prompts)
+```
 
-packages/desktop/src/
+**Desktop Frontend** (`packages/desktop/src/`)
+```
 ├── components/        # React UI (copied from PWA)
 ├── hooks/            # Platform-specific hook wrappers
 ├── lib/
@@ -230,59 +197,55 @@ packages/desktop/src/
 │   ├── audio.ts          # Web Audio sound engine
 │   └── sync-client.ts    # Desktop discovery & sync
 └── App.tsx           # Main app with routing
+```
 
-packages/core/
+**Core Package** (`packages/core/`)
+```
 ├── lib/              # Business logic (progression, schedule, utils)
 ├── hooks/            # Platform-agnostic hooks
 └── __tests__/        # 44 unit tests
+```
 
-app/                  # Next.js PWA
+**PWA** (`app/`)
+```
 ├── page.tsx          # Main workout interface
 └── pair/page.tsx     # QR code pairing
 ```
 
-## Troubleshooting
+### Troubleshooting
 
-### Desktop App
+**Desktop App Build Issues**
 
-**"cargo: command not found"**
-- Install Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-- Restart terminal
+| Error | Solution |
+|-------|----------|
+| `cargo: command not found` | Install Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` → Restart terminal |
+| `missing xcrun` | Install Xcode Command Line Tools: `xcode-select --install` |
+| `Failed to initialize database` | Check permissions: `ls -la /Users/Shared/TrainDaily/` (should be readable/writable by all users) |
+| Mic detection not working | Grant microphone permission: System Preferences > Security & Privacy > Microphone<br>Check logs: `tail -f /Users/Shared/TrainDaily/logs/daemon.log` |
 
-**Build fails with "missing xcrun"**
-- Install Xcode Command Line Tools: `xcode-select --install`
+**PWA Development Issues**
 
-**"Failed to initialize database"**
-- Check permissions: `ls -la /Users/Shared/TrainDaily/`
-- Should be readable/writable by all users
+| Error | Solution |
+|-------|----------|
+| `Port 3000 already in use` | Kill process: `lsof -ti:3000 \| xargs kill`<br>Or change port in `package.json` dev script |
+| Sync not working | 1. Verify desktop app is running<br>2. Check both devices on same WiFi<br>3. Re-pair (scan QR again)<br>4. Check browser console for errors |
+| QR code doesn't scan | Use phone's default camera app<br>Verify QR URL starts with `https://traindaily.vercel.app/pair?` |
 
-**Mic detection not working**
-- Grant microphone permission: System Preferences > Security & Privacy > Microphone
-- Check logs: `tail -f /Users/Shared/TrainDaily/logs/daemon.log`
+### Contributing
 
-### PWA
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Make your changes
+4. Run tests: `cd packages/core && pnpm test`
+5. Commit with semantic commit messages: `feat:`, `fix:`, `docs:`, `chore:`
+6. Push and create a Pull Request
 
-**"Port 3000 already in use"**
-- Kill process: `lsof -ti:3000 | xargs kill`
-- Or use different port: Edit `package.json` dev script
+**Useful Documentation**
+- [`MIGRATION_COMPLETE.md`](MIGRATION_COMPLETE.md) - Full migration documentation
+- [`MIGRATION_PROGRESS.md`](MIGRATION_PROGRESS.md) - Phase-by-phase progress tracker
+- [`packages/core/README.md`](packages/core/README.md) - Core package API docs
+- [`packages/desktop/README.md`](packages/desktop/README.md) - Desktop app architecture
 
-**Sync not working**
-- Verify desktop app is running
-- Check both devices on same WiFi network
-- Try re-pairing (scan QR code again)
-- Check browser console for errors
-
-**QR code doesn't scan**
-- Ensure phone camera can access URL (use phone's default camera app)
-- Verify QR contains valid URL starting with `https://traindaily.vercel.app/pair?`
-
-## Documentation
-
-- **MIGRATION_COMPLETE.md** - Full migration documentation
-- **MIGRATION_PROGRESS.md** - Phase-by-phase progress tracker
-- **packages/core/README.md** - Core package API docs
-- **packages/desktop/README.md** - Desktop app architecture
-
-## License
+### License
 
 MIT
