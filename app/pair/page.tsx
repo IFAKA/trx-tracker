@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { CheckCircle, Smartphone, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { parseQRData, saveDesktopInfo } from '@/lib/sync-client';
 
 export default function PairPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [status, setStatus] = useState<'parsing' | 'success' | 'error'>('parsing');
   const [deviceId, setDeviceId] = useState<string>('');
 
