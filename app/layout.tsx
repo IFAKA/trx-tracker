@@ -33,6 +33,12 @@ export const viewport: Viewport = {
   themeColor: '#0a0a0a',
 };
 
+// Conditionally import DevToolsProvider — tree-shaken in production
+const DevToolsWrapper = process.env.NODE_ENV === 'development'
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  ? (require('@/components/DevTools/DevToolsProvider') as { DevToolsProvider: React.ComponentType<{ children: React.ReactNode }> }).DevToolsProvider
+  : null;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -41,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${geist.variable} ${geistMono.variable} font-mono antialiased`}>
-        {children}
+        {DevToolsWrapper ? <DevToolsWrapper>{children}</DevToolsWrapper> : children}
       </body>
     </html>
   );

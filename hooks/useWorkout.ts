@@ -6,6 +6,7 @@ import { EXERCISES, REST_DURATION } from '@/lib/constants';
 import { loadWorkoutData, saveSession, getFirstSessionDate, setFirstSessionDate } from '@/lib/storage';
 import { formatDateKey, getWeekNumber, getSetsForWeek } from '@/lib/workout-utils';
 import { getTargets } from '@/lib/progression';
+import { useDevTools, useDevToolsRegisterWorkout } from '@/lib/devtools';
 import {
   unlockAudio,
   playStart,
@@ -29,6 +30,8 @@ export function useWorkout(date: Date) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const countdownPlayedRef = useRef<Set<number>>(new Set());
+
+  const devtools = useDevTools();
 
   const dateKey = formatDateKey(date);
   const firstSession = getFirstSessionDate();
@@ -103,13 +106,13 @@ export function useWorkout(date: Date) {
           }
           return t - 1;
         });
-      }, 1000);
+      }, 1000 / (devtools?.timerSpeed ?? 1));
       return () => {
         if (timerRef.current) clearInterval(timerRef.current);
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, timer === REST_DURATION]);
+  }, [state, timer === REST_DURATION, devtools?.timerSpeed]);
 
   const advanceAfterRest = useCallback(() => {
     const nextSet = currentSet + 1;
@@ -277,6 +280,27 @@ export function useWorkout(date: Date) {
   const refreshData = useCallback(() => {
     setData(loadWorkoutData());
   }, []);
+
+  // Register state into DevTools context (writes to ref, no re-render)
+  useDevToolsRegisterWorkout({
+    state,
+    exerciseIndex,
+    currentSet,
+    setsPerExercise,
+    timer,
+    currentTarget,
+    sessionReps,
+    weekNumber,
+    currentExerciseName: currentExercise?.name ?? '',
+    setState,
+    setExerciseIndex,
+    setCurrentSet,
+    setTimer,
+    logSet,
+    skipTimer,
+    startWorkout,
+    quitWorkout,
+  });
 
   return {
     state,
