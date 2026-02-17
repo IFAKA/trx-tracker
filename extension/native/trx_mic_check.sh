@@ -1,6 +1,6 @@
 #!/bin/bash
-# TRX Mic Check - Native Messaging Host
-# Checks if macOS microphone is actively in use via CoreAudio.
+# TRX Native Check - Native Messaging Host
+# Checks macOS microphone status (CoreAudio) and screen sharing status (NSWorkspace).
 # Communicates with Chrome extension using Native Messaging protocol
 # (4-byte little-endian length prefix + JSON).
 
@@ -71,9 +71,57 @@ print(isRunning != 0 ? "true" : "false")
 SWIFT
 }
 
+# Check if screen is being shared via NSWorkspace.runningApplications
+# Uses only public API, requires ZERO permissions, read-only.
+# Checks bundle identifiers of running apps — these are code-signed
+# by Apple/vendors so they can't be spoofed without breaking Gatekeeper.
+check_screen_sharing() {
+  /usr/bin/swift - 2>/dev/null <<'SWIFT'
+import AppKit
+
+let sharingBundleIDs: Set<String> = [
+    // macOS built-in
+    "com.apple.screensharing.agent",
+    "com.apple.ScreenSharing",
+    // Zoom
+    "us.zoom.xos",
+    // Microsoft Teams
+    "com.microsoft.teams",
+    "com.microsoft.teams2",
+    // Slack (huddle/screen share)
+    "com.tinyspeck.slackmacgap",
+    // Google Meet (runs inside Chrome, detected via mic — kept for completeness)
+    // Discord
+    "com.ggerganov.whisper.cpp",
+    "com.hammerandchisel.discord",
+    // Tuple
+    "app.tuple.app",
+    // Loom
+    "com.loom.desktop",
+    // Around
+    "co.around.around",
+    // Webex
+    "com.cisco.webexmeetingsapp",
+    // GoTo Meeting
+    "com.logmein.GoToMeeting",
+    // FaceTime (screen share)
+    "com.apple.FaceTime",
+]
+
+let running = NSWorkspace.shared.runningApplications
+let sharing = running.contains { app in
+    guard let bundleID = app.bundleIdentifier else { return false }
+    return sharingBundleIDs.contains(bundleID)
+}
+
+print(sharing ? "true" : "false")
+SWIFT
+}
+
 # Main loop — handle one message per invocation (Chrome spawns us per connect)
 while true; do
   read_message || exit 0
   mic_active=$(check_mic)
-  send_message "{\"micActive\":${mic_active}}"
+  screen_sharing=$(check_screen_sharing)
+  send_message "{\"micActive\":${mic_active},\"screenSharing\":${screen_sharing}}"
 done

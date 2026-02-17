@@ -23,8 +23,9 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 const NM_HOST = 'com.trx.mic_check';
 const MIC_RETRY_MINUTES = 5;
 
-function checkMicActive() {
+function checkNativeStatus() {
   return new Promise((resolve) => {
+    const fallback = { micActive: false, screenSharing: false };
     try {
       const port = chrome.runtime.connectNative(NM_HOST);
       let responded = false;
@@ -32,40 +33,49 @@ function checkMicActive() {
       port.onMessage.addListener((msg) => {
         responded = true;
         port.disconnect();
-        resolve(msg.micActive === true);
+        resolve({
+          micActive: msg.micActive === true,
+          screenSharing: msg.screenSharing === true,
+        });
       });
 
       port.onDisconnect.addListener(() => {
         if (!responded) {
           console.warn('Native host disconnected:', chrome.runtime.lastError?.message);
-          resolve(false); // If host unavailable, don't block breaks
+          resolve(fallback);
         }
       });
 
       port.postMessage({ action: 'check' });
 
-      // Timeout fallback — don't block breaks if host hangs
       setTimeout(() => {
         if (!responded) {
           responded = true;
           try { port.disconnect(); } catch (_) {}
-          resolve(false);
+          resolve(fallback);
         }
       }, 3000);
     } catch (err) {
       console.warn('Native messaging error:', err);
-      resolve(false);
+      resolve(fallback);
     }
   });
 }
 
-async function triggerMicroBreak() {
-  // Check if microphone is active (call in progress)
-  const micActive = await checkMicActive();
-  await chrome.storage.local.set({ lastMicCheck: micActive });
+// Backward-compatible wrapper
+async function checkMicActive() {
+  const { micActive } = await checkNativeStatus();
+  return micActive;
+}
 
-  if (micActive) {
-    console.log('Mic active — deferring break by', MIC_RETRY_MINUTES, 'min');
+async function triggerMicroBreak() {
+  // Check mic and screen sharing status
+  const { micActive, screenSharing } = await checkNativeStatus();
+  await chrome.storage.local.set({ lastMicCheck: micActive, lastScreenShareCheck: screenSharing });
+
+  if (micActive || screenSharing) {
+    const reason = screenSharing ? 'Screen sharing' : 'Mic active';
+    console.log(`${reason} — deferring break by`, MIC_RETRY_MINUTES, 'min');
     chrome.alarms.create('trx-mic-retry', { delayInMinutes: MIC_RETRY_MINUTES });
     return;
   }
@@ -106,6 +116,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
   const shouldBlock = await checkWorkoutBlock();
   if (shouldBlock) {
+    // Don't embarrass the user during screen sharing
+    const { screenSharing } = await checkNativeStatus();
+    if (screenSharing) return;
     chrome.tabs.sendMessage(tabId, { type: 'BLOCK_WORKOUT' });
   }
 });
@@ -121,7 +134,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // async response
   }
   if (message.type === 'CHECK_MIC') {
-    checkMicActive().then((micActive) => sendResponse({ micActive }));
+    checkNativeStatus().then((status) => sendResponse(status));
     return true;
   }
 });
