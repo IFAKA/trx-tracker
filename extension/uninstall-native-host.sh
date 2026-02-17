@@ -29,6 +29,6 @@ fi
 echo ""
 echo "To fully remove the extension:"
 echo "  1. Open chrome://extensions or brave://extensions"
-echo "  2. Find 'TRX Tracker' and click Remove"
+echo "  2. Find 'TrainDaily' and click Remove"
 echo ""
 echo "That's it — no other files are left on your system."

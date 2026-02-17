@@ -1,6 +1,6 @@
-# TRX Tracker
+# TrainDaily
 
-A no-excuses workout coach: PWA for guided TRX workouts with progressive overload, paired with a Chrome extension that blocks browsing until you train and enforces hourly micro-break mobility exercises.
+A no-excuses workout coach: PWA for guided workouts with progressive overload, paired with a Chrome extension that blocks browsing until you train and enforces hourly micro-break mobility exercises.
 
 ## What It Does
 

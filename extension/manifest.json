@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "TRX Tracker",
+  "name": "TrainDaily",
   "version": "1.0.0",
   "description": "Blocks browsing until workout is logged + hourly micro-breaks",
   "permissions": ["storage", "alarms", "tabs", "activeTab", "nativeMessaging"],

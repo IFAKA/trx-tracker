@@ -1,4 +1,4 @@
-// TRX Tracker - Background Service Worker
+// TrainDaily - Background Service Worker
 // Handles: morning workout block + hourly micro-break alarms
 
 const ALARM_MICRO_BREAK = 'trx-micro-break';

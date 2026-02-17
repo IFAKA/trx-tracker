@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'TRX Tracker',
-    short_name: 'TRX',
-    description: 'Zero-thinking guided TRX workout coach',
+    name: 'TrainDaily',
+    short_name: 'TrainDaily',
+    description: 'Zero-thinking guided workout coach with progressive overload',
     start_url: '/',
     display: 'standalone',
     orientation: 'portrait',

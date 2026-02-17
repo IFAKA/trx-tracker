@@ -1,4 +1,4 @@
-// TRX Tracker - Content Script
+// TrainDaily - Content Script
 // Syncs PWA localStorage + injects block/break overlays
 
 const MICRO_BREAK_EXERCISES = [
@@ -11,7 +11,7 @@ const MICRO_BREAK_EXERCISES = [
 // Try to sync PWA data
 function syncFromPWA() {
   try {
-    const raw = localStorage.getItem('trx_tracker_sessions');
+    const raw = localStorage.getItem('traindaily_sessions');
     if (!raw) return;
     const data = JSON.parse(raw);
     const today = new Date().toISOString().split('T')[0];

@@ -1,6 +1,6 @@
 {
   "name": "com.trx.mic_check",
-  "description": "TRX Tracker - Microphone activity check for micro-break suppression",
+  "description": "TrainDaily - Microphone activity check for micro-break suppression",
   "path": "/PLACEHOLDER/trx_mic_check.sh",
   "type": "stdio",
   "allowed_origins": ["chrome-extension://EXTENSION_ID/"]

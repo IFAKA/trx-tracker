@@ -14,7 +14,7 @@ npx playwright test e2e/workout-flow.spec.ts  # Single test file
 
 ## Architecture
 
-**TRX Tracker** is a PWA workout coach (Next.js 16 App Router + React 19 + TypeScript) paired with a Chrome extension that enforces training accountability.
+**TrainDaily** is a PWA workout coach (Next.js 16 App Router + React 19 + TypeScript) paired with a Chrome extension that enforces training accountability.
 
 ### PWA (Next.js)
 
