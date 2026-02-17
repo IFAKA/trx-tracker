@@ -252,6 +252,28 @@ export function useWorkout(date: Date) {
     releaseWakeLock();
   }, [releaseWakeLock]);
 
+  // Browser back button support — push history entries on state changes
+  // so the back gesture goes back through workout states instead of leaving the app
+  useEffect(() => {
+    if (state !== 'idle') {
+      window.history.pushState({ workoutState: state }, '');
+    }
+  }, [state]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (state === 'complete') {
+        // From complete screen, just go back to idle
+        setState('idle');
+      } else if (state !== 'idle') {
+        // Mid-workout: quit (clears timer, resets state)
+        quitWorkout();
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [state, quitWorkout]);
+
   const refreshData = useCallback(() => {
     setData(loadWorkoutData());
   }, []);

@@ -90,6 +90,36 @@ export function useMobility() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, timer]);
 
+  const quit = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsActive(false);
+    setExerciseIndex(0);
+    setTimer(0);
+    setSide(null);
+  }, []);
+
+  // Browser back button support
+  useEffect(() => {
+    if (isActive) {
+      window.history.pushState({ mobilityActive: true }, '');
+    }
+    // Only push when becoming active, not on every re-render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (isActive) {
+        quit();
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isActive, quit]);
+
   const skip = useCallback(() => {
     playSkip();
     setTimer(0);
