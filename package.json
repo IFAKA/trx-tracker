@@ -12,6 +12,7 @@
     "release:dry": "semantic-release --dry-run"
   },
   "dependencies": {
+    "@traindaily/core": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -21,7 +22,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.7.0",
-    "tailwind-merge": "^3.4.1"
+    "tailwind-merge": "^3.4.1",
+    "vercel": "^50.18.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

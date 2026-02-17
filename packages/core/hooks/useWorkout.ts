@@ -13,11 +13,12 @@
  * - onHistoryPush: Optional browser history handler
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { WorkoutState, WorkoutData, ExerciseKey } from '../lib/types';
-import { EXERCISES, REST_DURATION } from '../lib/constants';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { WorkoutState, WorkoutData, ExerciseKey, Exercise } from '../lib/types';
+import { PUSH_EXERCISES, PULL_EXERCISES, LEGS_EXERCISES, REST_DURATION } from '../lib/constants';
 import { formatDateKey, getWeekNumber, getSetsForWeek } from '../lib/workout-utils';
 import { getTargets } from '../lib/progression';
+import { getWorkoutType } from '../lib/schedule';
 import type { StorageAdapter } from '../lib/storage-interface';
 
 // ============================================================================
@@ -64,7 +65,7 @@ export interface UseWorkoutReturn {
   currentSet: number;
   setsPerExercise: number;
   timer: number;
-  currentExercise: typeof EXERCISES[number] | undefined;
+  currentExercise: Exercise | undefined;
   currentTarget: number;
   previousRep: number | null;
   flashColor: 'green' | 'red' | null;
@@ -132,7 +133,18 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
   const dateKey = formatDateKey(date);
   const weekNumber = getWeekNumber(firstSessionDate, date);
   const setsPerExercise = getSetsForWeek(weekNumber);
-  const currentExercise = EXERCISES[exerciseIndex];
+
+  const { workoutType, exercises } = useMemo(() => {
+    const wt = getWorkoutType(date);
+    let exs: Exercise[];
+    if (wt === 'push') exs = PUSH_EXERCISES;
+    else if (wt === 'pull') exs = PULL_EXERCISES;
+    else if (wt === 'legs') exs = LEGS_EXERCISES;
+    else exs = PUSH_EXERCISES; // rest day fallback (shouldn't start workout on rest day)
+    return { workoutType: wt, exercises: exs };
+  }, [date]);
+
+  const currentExercise = exercises[exerciseIndex];
 
   const targets = currentExercise
     ? getTargets(currentExercise.key, weekNumber, date, data)
@@ -202,10 +214,10 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
     } else {
       // Next exercise
       const nextExercise = exerciseIndex + 1;
-      if (nextExercise < EXERCISES.length) {
+      if (nextExercise < exercises.length) {
         // Show transition interstitial
         audioCallbacks.playNextExercise?.();
-        setNextExerciseName(EXERCISES[nextExercise].name);
+        setNextExerciseName(exercises[nextExercise].name);
         setExerciseIndex(nextExercise);
         setCurrentSet(0);
         setState('transitioning');
@@ -215,7 +227,7 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSet, setsPerExercise, exerciseIndex]);
+  }, [currentSet, setsPerExercise, exerciseIndex, exercises]);
 
   const finishTransition = useCallback(() => {
     setState('exercising');
@@ -226,8 +238,9 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
       const session: WorkoutData[string] = {
         logged_at: new Date().toISOString(),
         week_number: weekNumber,
+        workout_type: workoutType as Exclude<typeof workoutType, 'rest'>,
       };
-      for (const ex of EXERCISES) {
+      for (const ex of exercises) {
         if (sessionReps[ex.key]) {
           (session as Record<string, unknown>)[ex.key] = sessionReps[ex.key];
         }
@@ -241,7 +254,7 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
       audioCallbacks.playSessionComplete?.();
       onWakeLockRelease?.();
     })();
-  }, [dateKey, weekNumber, sessionReps, storageAdapter, audioCallbacks, onWakeLockRelease]);
+  }, [dateKey, weekNumber, sessionReps, storageAdapter, audioCallbacks, onWakeLockRelease, exercises, workoutType]);
 
   const startWorkout = useCallback(() => {
     audioCallbacks.unlockAudio?.();
@@ -272,7 +285,7 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
 
       // Start rest timer (unless last set of last exercise)
       const isLastSet = currentSet + 1 >= setsPerExercise;
-      const isLastExercise = exerciseIndex + 1 >= EXERCISES.length;
+      const isLastExercise = exerciseIndex + 1 >= exercises.length;
 
       if (isLastSet && isLastExercise) {
         // Complete after brief delay for flash
@@ -286,8 +299,9 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
             const session: WorkoutData[string] = {
               logged_at: new Date().toISOString(),
               week_number: weekNumber,
+              workout_type: workoutType as Exclude<typeof workoutType, 'rest'>,
             };
-            for (const ex of EXERCISES) {
+            for (const ex of exercises) {
               if (finalReps[ex.key]) {
                 (session as Record<string, unknown>)[ex.key] = finalReps[ex.key];
               }
@@ -321,6 +335,8 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
       storageAdapter,
       audioCallbacks,
       onWakeLockRelease,
+      exercises,
+      workoutType,
     ]
   );
 
