@@ -1,4 +1,3 @@
 {
-  "buildCommand": "pnpm run build",
-  "installCommand": "pnpm install --filter=traindaily --filter=@traindaily/core --filter=@traindaily/design-system"
+  "buildCommand": "pnpm run build"
 }
