@@ -64,14 +64,6 @@ function TodayContent({ date }: { date: Date }) {
   const weekNumber = getWeekNumber(firstSession, date);
   const workoutType = getWorkoutType(date);
 
-  // Check if desktop is paired
-  const [isPaired, setIsPaired] = useState(false);
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const desktopInfo = localStorage.getItem('traindaily_desktop_info');
-      setIsPaired(!!desktopInfo);
-    }
-  }, []);
 
   // Rest day
   if (!schedule.isTraining) {
@@ -225,9 +217,7 @@ function TodayContent({ date }: { date: Date }) {
         className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all mt-4"
       >
         <Smartphone className="w-4 h-4" />
-        <span className="text-sm">
-          {isPaired ? 'Paired with Desktop' : 'Pair with Desktop'}
-        </span>
+        <span className="text-sm">Pair with Phone</span>
       </button>
     </div>
   );
