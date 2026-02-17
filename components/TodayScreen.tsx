@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dumbbell, Play, CheckCircle, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExerciseScreen } from './ExerciseScreen';
@@ -10,16 +10,23 @@ import { SessionComplete } from './SessionComplete';
 import { RestDayScreen } from './RestDayScreen';
 import { useWorkout } from '@/hooks/useWorkout';
 import { useSchedule } from '@/hooks/useSchedule';
+import { useDevTools } from '@/lib/devtools';
 import { formatDisplayDate, getWeekNumber } from '@/lib/workout-utils';
 import { getFirstSessionDate } from '@/lib/storage';
 import { EXERCISES } from '@/lib/constants';
 
 export function TodayScreen() {
-  const [today, setToday] = useState<Date | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const devtools = useDevTools();
 
   useEffect(() => {
-    setToday(new Date());
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
+
+  const today = useMemo(() => {
+    if (!mounted) return null;
+    return devtools?.dateOverride ?? new Date();
+  }, [mounted, devtools?.dateOverride]);
 
   if (!today) {
     return (
@@ -121,6 +128,7 @@ function TodayContent({ date }: { date: Date }) {
   if (workout.state === 'complete') {
     return (
       <SessionComplete
+        mode="workout"
         sessionReps={workout.sessionReps}
         data={workout.data}
         date={date}

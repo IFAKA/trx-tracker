@@ -1,8 +1,9 @@
 'use client';
 
-import { Moon, Play, CheckCircle, Calendar } from 'lucide-react';
+import { Moon, Play, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MobilityFlow } from './MobilityFlow';
+import { SessionComplete } from './SessionComplete';
 import { useMobility } from '@/hooks/useMobility';
 
 interface RestDayScreenProps {
@@ -32,15 +33,13 @@ export function RestDayScreen({ nextTraining, weekCompleted, weekTotal }: RestDa
 
   if (mobility.isComplete) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-6">
-        <CheckCircle className="w-16 h-16 text-green-500" />
-        <h2 className="text-xl font-bold">MOBILITY DONE</h2>
-        {nextTraining && (
-          <p className="text-sm text-muted-foreground">
-            NEXT: {nextTraining}
-          </p>
-        )}
-      </div>
+      <SessionComplete
+        mode="mobility"
+        date={new Date()}
+        weekCompleted={weekCompleted}
+        weekTotal={weekTotal}
+        nextTraining={nextTraining}
+      />
     );
   }
 
