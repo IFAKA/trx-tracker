@@ -1,0 +1,61 @@
+[package]
+name = "traindaily-desktop"
+version = "0.1.0"
+description = "TrainDaily - Native macOS workout accountability app"
+authors = ["TrainDaily"]
+edition = "2021"
+
+[lib]
+name = "traindaily_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Tauri core
+tauri = { version = "2", features = ["tray-icon", "window-all", "macos-private-api"] }
+tauri-plugin-opener = "2"
+tauri-plugin-shell = "2"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Database
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# HTTP server (for sync)
+axum = { version = "0.7", features = ["ws"] }
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "cors"] }
+
+# TLS certificate generation
+rcgen = "0.13"
+rustls = "0.23"
+rustls-pemfile = "2"
+
+# macOS CoreAudio (mic detection)
+[target.'cfg(target_os = "macos")'.dependencies]
+core-audio = "0.11"
+core-foundation = "0.10"
+
+# Utilities
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+rand = "0.8"
+hex = "0.4"
+hostname = "0.4"
+
+# Async streaming
+async-stream = "0.3"
+futures = "0.3"
+
+# Tracing/logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
