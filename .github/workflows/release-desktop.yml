@@ -1,0 +1,66 @@
+name: Release Desktop App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: macos-latest
+
+    permissions:
+      contents: write # Required for creating releases
+      issues: write   # Required for semantic-release
+      pull-requests: write # Required for semantic-release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Get full history for semantic-release
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run semantic-release (version bump)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+        id: semantic
+
+      - name: Build Tauri app
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: |
+          cd packages/desktop
+          pnpm run tauri build
+
+      - name: Upload .dmg to GitHub Release
+        if: steps.semantic.outputs.new_release_published == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.semantic.outputs.new_release_version }}
+          files: |
+            packages/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            packages/desktop/src-tauri/target/release/bundle/macos/*.app.tar.gz
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
