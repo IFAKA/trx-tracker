@@ -16,17 +16,7 @@ export class TauriStorageAdapter implements StorageAdapter {
       // Convert Rust types to TypeScript types
       const workoutData: WorkoutData = {};
       for (const [dateKey, session] of Object.entries(sessions)) {
-        workoutData[dateKey] = {
-          inverted_row: session.inverted_row || undefined,
-          single_arm_row: session.single_arm_row || undefined,
-          pike_pushup: session.pike_pushup || undefined,
-          face_pull: session.face_pull || undefined,
-          pushup: session.pushup || undefined,
-          wall_lateral_raise: session.wall_lateral_raise || undefined,
-          plank: session.plank || undefined,
-          logged_at: session.logged_at,
-          week_number: session.week_number,
-        };
+        workoutData[dateKey] = session as WorkoutSession;
       }
 
       return workoutData;

@@ -1,6 +1,8 @@
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, differenceInWeeks } from 'date-fns';
 import { WorkoutData, ComparisonResult, WeeklyStats, ExerciseKey } from './types';
-import { TRAINING_DAYS } from './constants';
+
+// Mon–Sat are training days in the 6-day PPL split
+const TRAINING_DAYS = [1, 2, 3, 4, 5, 6] as const;
 
 export function formatDateKey(date: Date): string {
   return format(date, 'yyyy-MM-dd');
@@ -92,5 +94,5 @@ export function getTrainingDaysThisWeek(date: Date): number {
   const start = startOfWeek(date, { weekStartsOn: 1 });
   const end = endOfWeek(date, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start, end });
-  return days.filter((d) => TRAINING_DAYS.includes(d.getDay() as 1 | 3 | 5)).length;
+  return days.filter((d) => TRAINING_DAYS.includes(d.getDay() as 1 | 2 | 3 | 4 | 5 | 6)).length;
 }
