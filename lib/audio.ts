@@ -1,5 +1,11 @@
 // Sound engine — Web Audio API cues + haptic feedback
 // Uses a single shared AudioContext, unlocked on first user gesture
+//
+// Design principles:
+// - Sine waves for positive/melodic cues, triangle for transitions/neutral actions
+// - Volume hierarchy: celebrations 0.35, actions 0.25, ticks 0.18
+// - Ascending = positive, descending = calming/dismissal
+// - Soft attack (10ms fade-in) on multi-note melodic sounds for warmth
 
 let sharedCtx: AudioContext | null = null;
 
@@ -30,7 +36,8 @@ function playTone(
   frequency: number,
   duration: number,
   volume = 0.3,
-  startDelay = 0
+  startDelay = 0,
+  waveform: OscillatorType = 'sine'
 ): void {
   const ctx = getContext();
   if (!ctx) return;
@@ -39,6 +46,7 @@ function playTone(
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
+    osc.type = waveform;
     osc.frequency.value = frequency;
     gain.gain.setValueAtTime(volume, ctx.currentTime + startDelay);
     gain.gain.exponentialRampToValueAtTime(
@@ -52,13 +60,31 @@ function playTone(
   }
 }
 
-/** Quick soft "pop" — 520 Hz, 100ms */
-export function playSetLoggedHit() {
-  playTone(520, 0.1, 0.25);
-  vibrate([50]);
+/** Play a note with soft attack (fade-in) for warmer melodic sounds */
+function playWarmNote(
+  ctx: AudioContext,
+  frequency: number,
+  startTime: number,
+  duration: number,
+  volume: number,
+  waveform: OscillatorType = 'sine'
+): void {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = waveform;
+  osc.frequency.value = frequency;
+  // Soft attack: fade in over 10ms
+  gain.gain.setValueAtTime(0.001, startTime);
+  gain.gain.linearRampToValueAtTime(volume, startTime + 0.01);
+  // Decay
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.start(startTime);
+  osc.stop(startTime + duration + 0.05);
 }
 
-/** Two-note ascending — 520→780 Hz, rewarding */
+/** Two-note ascending — 520→780 Hz perfect fifth, rewarding */
 export function playTargetHit() {
   const ctx = getContext();
   if (!ctx) return;
@@ -88,9 +114,33 @@ export function playTargetHit() {
   vibrate([50]);
 }
 
-/** Single lower tone — 330 Hz, 150ms, subtle miss */
+/** Two-note descending — 520→350 Hz, acknowledges effort, signals "not quite" */
 export function playTargetMiss() {
-  playTone(330, 0.15, 0.2);
+  const ctx = getContext();
+  if (!ctx) return;
+  try {
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.frequency.value = 520;
+    gain1.gain.setValueAtTime(0.22, ctx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    osc1.start(ctx.currentTime);
+    osc1.stop(ctx.currentTime + 0.15);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.frequency.value = 350;
+    gain2.gain.setValueAtTime(0.2, ctx.currentTime + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+    osc2.start(ctx.currentTime + 0.1);
+    osc2.stop(ctx.currentTime + 0.27);
+  } catch {
+    // Audio not available
+  }
   vibrate([30, 30, 30]);
 }
 
@@ -103,66 +153,48 @@ export function playSetLogged(hitTarget: boolean) {
   }
 }
 
-/** Countdown tick — pitch rises based on remaining seconds (3→2→1) */
+/** Countdown tick — triangle wave, pitch rises based on remaining seconds (3→2→1) */
 export function playCountdownTick(secondsLeft: number) {
   const freqMap: Record<number, number> = { 3: 660, 2: 770, 1: 880 };
   const freq = freqMap[secondsLeft];
   if (!freq) return;
-  playTone(freq, 0.08, 0.2);
+  playTone(freq, 0.08, 0.18, 0, 'triangle');
   vibrate([40]);
 }
 
-/** Rest complete — two quick 880 Hz pulses */
+/** Rest complete — quick ascending triad 660→880→1047, energizing "let's go" */
 export function playRestComplete() {
   const ctx = getContext();
   if (!ctx) return;
   try {
-    // First pulse
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.frequency.value = 880;
-    gain1.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-    osc1.start(ctx.currentTime);
-    osc1.stop(ctx.currentTime + 0.15);
-
-    // Second pulse after 150ms gap (100ms tone + 50ms silence)
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.frequency.value = 880;
-    gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.15);
-    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    osc2.start(ctx.currentTime + 0.15);
-    osc2.stop(ctx.currentTime + 0.3);
-  } catch {
-    // Audio not available
-  }
-  vibrate([200, 100, 200]);
-}
-
-/** Session complete — major chord arpeggio C5→E5→G5→C6 */
-export function playSessionComplete() {
-  const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
-  const noteLength = 0.1;
-  const spacing = 0.1;
-  const ctx = getContext();
-  if (!ctx) return;
-  try {
+    const notes = [660, 880, 1047]; // D5-ish, A5, C6 — bright ascending push
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.frequency.value = freq;
-      const start = ctx.currentTime + i * spacing;
-      gain.gain.setValueAtTime(0.25, start);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + noteLength);
+      const start = ctx.currentTime + i * 0.08;
+      gain.gain.setValueAtTime(0.35, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.1);
       osc.start(start);
-      osc.stop(start + noteLength + 0.05);
+      osc.stop(start + 0.15);
+    });
+  } catch {
+    // Audio not available
+  }
+  vibrate([60, 40, 100]);
+}
+
+/** Session complete — major chord arpeggio C5→E5→G5→C6 with warm attack */
+export function playSessionComplete() {
+  const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+  const ctx = getContext();
+  if (!ctx) return;
+  try {
+    notes.forEach((freq, i) => {
+      const start = ctx.currentTime + i * 0.12;
+      playWarmNote(ctx, freq, start, 0.15, 0.35);
     });
   } catch {
     // Audio not available
@@ -170,55 +202,50 @@ export function playSessionComplete() {
   vibrate([100, 50, 100, 50, 200]);
 }
 
-/** Start — soft ascending double-tap to confirm workout/mobility begin */
+/** Start — ascending C5→G5 fifth, bright and intentional */
 export function playStart() {
-  playTone(440, 0.06, 0.2);
-  playTone(660, 0.08, 0.2, 0.08);
+  playTone(523, 0.1, 0.25);
+  playTone(784, 0.12, 0.25, 0.1);
   vibrate([40, 30, 40]);
 }
 
-/** Next exercise — short bright chirp to signal transition */
+/** Next exercise — triangle wave two-note hop 660→1047, distinct from countdown ticks */
 export function playNextExercise() {
-  playTone(880, 0.08, 0.2);
+  playTone(660, 0.07, 0.22, 0, 'triangle');
+  playTone(1047, 0.09, 0.22, 0.07, 'triangle');
   vibrate([60]);
 }
 
-/** Skip — quick low blip to acknowledge skip action */
+/** Skip — quick descending slide 500→380, "dismissed" */
 export function playSkip() {
-  playTone(440, 0.05, 0.15);
+  playTone(500, 0.08, 0.18, 0, 'triangle');
+  playTone(380, 0.06, 0.15, 0.06, 'triangle');
   vibrate([30]);
 }
 
-/** Break start — attention-grabbing two-tone ping */
+/** Break start — attention-grabbing two-tone ascending ping */
 export function playBreakStart() {
   playTone(660, 0.1, 0.25);
   playTone(880, 0.1, 0.25, 0.12);
   vibrate([100, 50, 100]);
 }
 
-/** Break done — soft completion chime */
+/** Break done — descending bookend of breakStart, 880→660, "break closed" */
 export function playBreakDone() {
-  playTone(660, 0.1, 0.2);
-  vibrate([80]);
+  playTone(880, 0.1, 0.25);
+  playTone(660, 0.1, 0.22, 0.12);
+  vibrate([80, 40, 60]);
 }
 
-/** Mobility complete — gentle descending tone, calming */
+/** Mobility complete — gentle descending G5→E5→C5 with warm attack, calming */
 export function playMobilityComplete() {
   const ctx = getContext();
   if (!ctx) return;
   try {
     const notes = [784, 659, 523]; // G5, E5, C5 — descending calm
     notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      const start = ctx.currentTime + i * 0.15;
-      gain.gain.setValueAtTime(0.2, start);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15);
-      osc.start(start);
-      osc.stop(start + 0.2);
+      const start = ctx.currentTime + i * 0.18;
+      playWarmNote(ctx, freq, start, 0.18, 0.22);
     });
   } catch {
     // Audio not available
