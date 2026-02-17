@@ -228,7 +228,7 @@ function TodayContent({ date }: { date: Date }) {
           className="w-10 h-10"
           style={{ animation: 'bounce-in 600ms ease-out backwards' }}
         />
-        <h1 className="text-2xl font-bold tracking-tight uppercase text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-blue-400 to-green-400">
+        <h1 className="text-2xl font-bold tracking-tight uppercase text-foreground">
           {workoutType === 'push' ? 'PUSH' : workoutType === 'pull' ? 'PULL' : 'LEGS'}
         </h1>
         <p className="text-sm text-muted-foreground">{formatDisplayDate(date)}</p>
