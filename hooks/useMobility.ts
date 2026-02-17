@@ -26,6 +26,7 @@ export function useMobility() {
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [timer, setTimer] = useState(0);
   const [isActive, setIsActive] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [side, setSide] = useState<'left' | 'right' | null>(null);
   const [isComplete, setIsComplete] = useState(() => isMobilityDoneToday());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -44,8 +45,11 @@ export function useMobility() {
     setIsActive(true);
   }, []);
 
+  const pause = useCallback(() => setIsPaused(true), []);
+  const resume = useCallback(() => setIsPaused(false), []);
+
   useEffect(() => {
-    if (isActive && timer > 0) {
+    if (isActive && !isPaused && timer > 0) {
       timerRef.current = setInterval(() => {
         setTimer((t) => {
           // Countdown ticks at 3, 2, 1
@@ -63,6 +67,7 @@ export function useMobility() {
       };
     }
 
+    /* eslint-disable react-hooks/set-state-in-effect -- state machine advancement on timer reaching 0 */
     if (isActive && timer === 0) {
       // Advance
       if (exercise?.sides && side === 'left') {
@@ -87,8 +92,8 @@ export function useMobility() {
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, timer]);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [isActive, isPaused, timer, exercise, exerciseIndex, side]);
 
   const quit = useCallback(() => {
     if (timerRef.current) {
@@ -107,7 +112,6 @@ export function useMobility() {
       window.history.pushState({ mobilityActive: true }, '');
     }
     // Only push when becoming active, not on every re-render
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
   useEffect(() => {
@@ -131,9 +135,12 @@ export function useMobility() {
     timer,
     side,
     isActive,
+    isPaused,
     isComplete,
     totalExercises: MOBILITY_EXERCISES.length,
     startMobility,
     skip,
+    pause,
+    resume,
   };
 }

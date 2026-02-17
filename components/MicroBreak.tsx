@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Pause, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MicroBreakExercise } from '@/lib/types';
 import { ExerciseDemo } from '@/components/ExerciseDemo';
@@ -15,21 +15,32 @@ interface MicroBreakProps {
 export function MicroBreak({ exercise, onDismiss }: MicroBreakProps) {
   const [timer, setTimer] = useState(exercise.duration);
   const [canDismiss, setCanDismiss] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownPlayedRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     playBreakStart();
+  }, []);
+
+  useEffect(() => {
+    if (isPaused || timer <= 0) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
 
     intervalRef.current = setInterval(() => {
       setTimer((t) => {
         if (t <= 1) {
           clearInterval(intervalRef.current!);
+          intervalRef.current = null;
           setCanDismiss(true);
           playBreakDone();
           return 0;
         }
-        // Countdown ticks at 3, 2, 1
         const next = t - 1;
         if (next <= 3 && next > 0 && !countdownPlayedRef.current.has(next)) {
           countdownPlayedRef.current.add(next);
@@ -40,8 +51,15 @@ export function MicroBreak({ exercise, onDismiss }: MicroBreakProps) {
     }, 1000);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
+  }, [isPaused, timer]);
+
+  const handlePlayingChange = useCallback((isPlaying: boolean) => {
+    setIsPaused(isPlaying);
   }, []);
 
   const mins = Math.floor(timer / 60);
@@ -50,7 +68,11 @@ export function MicroBreak({ exercise, onDismiss }: MicroBreakProps) {
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center p-6 gap-6">
       {exercise.youtubeId && (
-        <ExerciseDemo youtubeId={exercise.youtubeId} title={exercise.name} />
+        <ExerciseDemo
+          youtubeId={exercise.youtubeId}
+          title={exercise.name}
+          onPlayingChange={handlePlayingChange}
+        />
       )}
 
       <h1 className="text-2xl font-bold tracking-tight">{exercise.name}</h1>
@@ -59,9 +81,18 @@ export function MicroBreak({ exercise, onDismiss }: MicroBreakProps) {
         {exercise.instruction}
       </p>
 
-      <span className="text-5xl font-mono font-bold">
-        {mins}:{secs.toString().padStart(2, '0')}
-      </span>
+      <div className="flex items-center gap-2">
+        <span
+          className={`text-5xl font-mono font-bold transition-opacity ${
+            isPaused ? 'opacity-40' : ''
+          }`}
+        >
+          {mins}:{secs.toString().padStart(2, '0')}
+        </span>
+        {isPaused && (
+          <Pause className="w-5 h-5 text-muted-foreground animate-pulse" />
+        )}
+      </div>
 
       {canDismiss && (
         <Button

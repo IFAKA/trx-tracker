@@ -1,6 +1,7 @@
 'use client';
 
-import { SkipForward } from 'lucide-react';
+import { useCallback } from 'react';
+import { Pause, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { MobilityExercise } from '@/lib/types';
@@ -12,7 +13,10 @@ interface MobilityFlowProps {
   totalExercises: number;
   timer: number;
   side: 'left' | 'right' | null;
+  isPaused: boolean;
   onSkip: () => void;
+  onPause: () => void;
+  onResume: () => void;
 }
 
 export function MobilityFlow({
@@ -21,9 +25,23 @@ export function MobilityFlow({
   totalExercises,
   timer,
   side,
+  isPaused,
   onSkip,
+  onPause,
+  onResume,
 }: MobilityFlowProps) {
   const progressPercent = (exerciseIndex / totalExercises) * 100;
+
+  const handlePlayingChange = useCallback(
+    (isPlaying: boolean) => {
+      if (isPlaying) {
+        onPause();
+      } else {
+        onResume();
+      }
+    },
+    [onPause, onResume]
+  );
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-6">
@@ -38,7 +56,11 @@ export function MobilityFlow({
       {/* Main content */}
       <div className="flex-1 flex flex-col items-center justify-center gap-6">
         {exercise.youtubeId && (
-          <ExerciseDemo youtubeId={exercise.youtubeId} title={exercise.name} />
+          <ExerciseDemo
+            youtubeId={exercise.youtubeId}
+            title={exercise.name}
+            onPlayingChange={handlePlayingChange}
+          />
         )}
 
         <h1 className="text-2xl font-bold tracking-tight text-center">
@@ -55,7 +77,18 @@ export function MobilityFlow({
           {exercise.instruction}
         </p>
 
-        <span className="text-5xl font-mono font-bold">{timer}s</span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-5xl font-mono font-bold transition-opacity ${
+              isPaused ? 'opacity-40' : ''
+            }`}
+          >
+            {timer}s
+          </span>
+          {isPaused && (
+            <Pause className="w-5 h-5 text-muted-foreground animate-pulse" />
+          )}
+        </div>
 
         <Button
           variant="ghost"

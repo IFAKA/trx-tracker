@@ -22,7 +22,10 @@ export function RestDayScreen({ nextTraining, weekCompleted, weekTotal }: RestDa
         totalExercises={mobility.totalExercises}
         timer={mobility.timer}
         side={mobility.side}
+        isPaused={mobility.isPaused}
         onSkip={mobility.skip}
+        onPause={mobility.pause}
+        onResume={mobility.resume}
       />
     );
   }
