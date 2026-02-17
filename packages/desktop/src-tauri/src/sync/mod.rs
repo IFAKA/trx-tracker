@@ -13,12 +13,12 @@ use anyhow::{Context, Result};
 use axum::{
     extract::{Query, State},
     http::{HeaderMap, StatusCode},
-    response::{IntoResponse, Response, Sse},
+    response::Sse,
     routing::{get, post},
     Json, Router,
 };
 use axum_server::tls_rustls::RustlsConfig;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
@@ -216,7 +216,7 @@ pub fn generate_qr_data(device_id: &str, auth_token: &str, local_ip: &str) -> St
 
 /// Get local IP address (best guess)
 pub fn get_local_ip() -> Result<String> {
-    use std::net::{IpAddr, Ipv4Addr};
+    use std::net::IpAddr;
 
     // Try to get local IP by connecting to an external address
     // (doesn't actually send data, just determines which interface would be used)

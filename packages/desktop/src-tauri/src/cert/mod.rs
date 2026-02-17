@@ -6,7 +6,7 @@
  */
 
 use anyhow::{Context, Result};
-use rcgen::{generate_simple_self_signed, CertifiedKey};
+use rcgen::generate_simple_self_signed;
 use std::fs;
 use std::path::PathBuf;
 

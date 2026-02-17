@@ -97,7 +97,7 @@ pub fn run() {
             {
                 use tauri::tray::{TrayIconBuilder, MouseButton, MouseButtonState};
 
-                let tray = TrayIconBuilder::new()
+                let _tray = TrayIconBuilder::new()
                     .icon(app.default_window_icon().unwrap().clone())
                     .tooltip("TrainDaily")
                     .on_tray_icon_event(|tray, event| {

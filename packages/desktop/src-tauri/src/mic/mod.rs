@@ -11,21 +11,8 @@
 use anyhow::Result;
 
 #[cfg(target_os = "macos")]
-use core_foundation::base::TCFType;
-#[cfg(target_os = "macos")]
-use core_foundation::string::{CFString, CFStringRef};
-
-#[cfg(target_os = "macos")]
 extern "C" {
     // CoreAudio system functions
-    fn AudioObjectGetPropertyDataSize(
-        inObjectID: u32,
-        inAddress: *const AudioObjectPropertyAddress,
-        inQualifierDataSize: u32,
-        inQualifierData: *const std::ffi::c_void,
-        outDataSize: *mut u32,
-    ) -> i32;
-
     fn AudioObjectGetPropertyData(
         inObjectID: u32,
         inAddress: *const AudioObjectPropertyAddress,
@@ -38,6 +25,7 @@ extern "C" {
 
 #[cfg(target_os = "macos")]
 #[repr(C)]
+#[allow(non_snake_case)]
 struct AudioObjectPropertyAddress {
     mSelector: u32,
     mScope: u32,
@@ -45,14 +33,19 @@ struct AudioObjectPropertyAddress {
 }
 
 #[cfg(target_os = "macos")]
+#[allow(non_upper_case_globals)]
 const kAudioObjectSystemObject: u32 = 1;
 #[cfg(target_os = "macos")]
+#[allow(non_upper_case_globals)]
 const kAudioHardwarePropertyDefaultInputDevice: u32 = 0x64696e20; // 'din '
 #[cfg(target_os = "macos")]
+#[allow(non_upper_case_globals)]
 const kAudioDevicePropertyDeviceIsRunningSomewhere: u32 = 0x67727275; // 'grru'
 #[cfg(target_os = "macos")]
+#[allow(non_upper_case_globals)]
 const kAudioObjectPropertyScopeGlobal: u32 = 0x676c6f62; // 'glob'
 #[cfg(target_os = "macos")]
+#[allow(non_upper_case_globals)]
 const kAudioObjectPropertyElementMain: u32 = 0;
 
 /// Check if microphone is currently active (in use)

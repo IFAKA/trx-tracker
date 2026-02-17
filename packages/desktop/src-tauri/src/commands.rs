@@ -4,9 +4,8 @@
  * Exposed to frontend via invoke()
  */
 
-use crate::db::{Database, WorkoutSession};
+use crate::db::WorkoutSession;
 use crate::AppState;
-use serde_json::Value;
 use std::collections::HashMap;
 use tauri::State;
 
