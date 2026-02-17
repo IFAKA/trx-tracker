@@ -137,6 +137,21 @@ traindaily/
 - shadcn/ui components
 - Web Audio, Wake Lock, Vibration APIs
 
+### Releases
+
+**Automated releases via semantic-release:**
+- Every `feat:` commit → new MINOR version (0.1.0 → 0.2.0)
+- Every `fix:` commit → new PATCH version (0.1.0 → 0.1.1)
+- GitHub Actions builds `.dmg` automatically
+- See [`RELEASES.md`](RELEASES.md) for commit message format
+
+```bash
+# Example: This commit will trigger v0.2.0 release
+git commit -m "feat: add workout history export"
+git push origin main
+# → Automated: .dmg built, GitHub release created
+```
+
 ### Development Commands
 
 ```bash
