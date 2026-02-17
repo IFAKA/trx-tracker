@@ -252,7 +252,7 @@ function TodayContent({ date }: { date: Date }) {
         >
           <Smartphone className="w-4 h-4" />
           <span className="text-sm">
-            {isPaired ? 'Synced with Desktop' : 'Pair with Desktop'}
+            {isPaired ? 'Paired with Desktop' : 'Pair with Desktop'}
           </span>
         </button>
         <button

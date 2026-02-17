@@ -1,12 +1,14 @@
 'use client';
 
-import { Trophy, TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Trophy, TrendingUp, TrendingDown, Minus, Calendar, Loader2, Check, WifiOff } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { EXERCISES, MOBILITY_EXERCISES } from '@/lib/constants';
 import { WorkoutData } from '@/lib/types';
 import { formatDateKey } from '@/lib/workout-utils';
 import { getTrainingDaysCompletedThisWeek } from '@/lib/schedule';
+import { syncWithDesktop, getStoredDesktopInfo } from '@/lib/sync-client';
 
 type SessionCompleteProps =
   | { mode: 'workout'; sessionReps: Record<string, number[]>; data: WorkoutData; date: Date }
@@ -14,6 +16,28 @@ type SessionCompleteProps =
 
 export function SessionComplete(props: SessionCompleteProps) {
   const isWorkout = props.mode === 'workout';
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'failed'>('idle');
+
+  // Sync with desktop after session
+  useEffect(() => {
+    if (!isWorkout) return;
+    const desktop = getStoredDesktopInfo();
+    if (!desktop) return;
+    setSyncStatus('syncing');
+    syncWithDesktop().then(({ success }) => {
+      setSyncStatus(success ? 'success' : 'failed');
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Detect difficulty increase: any exercise maxed out all sets at 20+ reps
+  const maxedExercises = isWorkout
+    ? EXERCISES.filter((ex) => {
+        const reps = props.sessionReps[ex.key];
+        return reps && reps.length > 0 && reps.every((r) => r >= 20);
+      })
+    : [];
+  const hasDifficultyIncrease = maxedExercises.length > 0;
 
   const weekProgress = isWorkout
     ? getTrainingDaysCompletedThisWeek(props.date, props.data)
@@ -124,6 +148,14 @@ export function SessionComplete(props: SessionCompleteProps) {
         >
           {isWorkout ? 'SESSION COMPLETE' : 'MOBILITY COMPLETE'}
         </h1>
+        {hasDifficultyIncrease && (
+          <p
+            className="text-xs text-orange-400 uppercase tracking-widest font-mono"
+            style={{ animation: 'slide-up-in 500ms ease-out 500ms backwards' }}
+          >
+            ↑ DIFFICULTY UP NEXT SESSION
+          </p>
+        )}
         {!isWorkout && props.nextTraining && (
           <p
             className="text-sm text-muted-foreground"
@@ -163,6 +195,18 @@ export function SessionComplete(props: SessionCompleteProps) {
           {weekProgress.completed}/{weekProgress.total} this week
         </span>
       </div>
+
+      {/* Sync status */}
+      {syncStatus !== 'idle' && (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {syncStatus === 'syncing' && <Loader2 className="w-3 h-3 animate-spin" />}
+          {syncStatus === 'success' && <Check className="w-3 h-3 text-green-500" />}
+          {syncStatus === 'failed' && <WifiOff className="w-3 h-3" />}
+          <span>
+            {syncStatus === 'syncing' ? 'Syncing with desktop...' : syncStatus === 'success' ? 'Synced' : 'Desktop not reachable'}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

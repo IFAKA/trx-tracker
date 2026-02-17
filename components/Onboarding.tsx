@@ -26,7 +26,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       icon: TrendingUp,
       title: 'Progressive Overload',
       description: [
-        '8-12 rep hypertrophy range',
+        '6-20 rep hypertrophy range',
         'Week 1-2: 3 sets per exercise',
         'Week 3+: 4 sets per exercise',
       ],
