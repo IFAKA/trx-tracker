@@ -30,6 +30,12 @@ Then open TrainDaily normally. You won't need to do this again.
 - Local network sync with the TrainDaily PWA (scan QR code to pair)
 - Works across macOS user accounts via `/Users/Shared/TrainDaily/`
 
+## Uninstall
+
+```bash
+sudo rm -rf /Applications/TrainDaily.app /Users/Shared/TrainDaily/ /Library/LaunchAgents/com.traindaily.desktop.plist && rm -rf ~/Library/Application\ Support/com.traindaily.desktop ~/Library/LaunchAgents/com.traindaily.desktop.plist ~/Library/Preferences/com.traindaily.desktop.plist ~/Library/Caches/com.traindaily.desktop ~/Library/Logs/com.traindaily.desktop
+```
+
 ## Development
 
 ```bash
