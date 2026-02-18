@@ -33,7 +33,7 @@ Then open TrainDaily normally. You won't need to do this again.
 ## Uninstall
 
 ```bash
-sudo rm -rf /Applications/TrainDaily.app /Users/Shared/TrainDaily/ /Library/LaunchAgents/com.traindaily.desktop.plist && rm -rf ~/Library/Application\ Support/com.traindaily.desktop ~/Library/LaunchAgents/com.traindaily.desktop.plist ~/Library/Preferences/com.traindaily.desktop.plist ~/Library/Caches/com.traindaily.desktop ~/Library/Logs/com.traindaily.desktop
+killall traindaily-desktop 2>/dev/null; sudo rm -rf /Applications/TrainDaily.app /Users/Shared/TrainDaily/ /Library/LaunchAgents/com.traindaily.desktop.plist && rm -rf ~/Library/Application\ Support/com.traindaily.desktop ~/Library/LaunchAgents/com.traindaily.desktop.plist ~/Library/Preferences/com.traindaily.desktop.plist ~/Library/Caches/com.traindaily.desktop ~/Library/Logs/com.traindaily.desktop
 ```
 
 ## Development
