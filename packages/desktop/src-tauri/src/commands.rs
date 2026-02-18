@@ -7,7 +7,7 @@
 use crate::db::WorkoutSession;
 use crate::AppState;
 use std::collections::HashMap;
-use tauri::State;
+use tauri::{State, AppHandle};
 
 #[tauri::command]
 pub fn get_all_sessions(state: State<AppState>) -> Result<HashMap<String, WorkoutSession>, String> {
@@ -51,6 +51,61 @@ pub fn check_mic_active() -> bool {
             false
         }
     }
+}
+
+#[tauri::command]
+pub fn get_setting(key: String, state: State<AppState>) -> Result<Option<String>, String> {
+    let db = state.db.lock().map_err(|e| e.to_string())?;
+    db.get_setting(&key).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn set_setting(key: String, value: String, state: State<AppState>) -> Result<(), String> {
+    let db = state.db.lock().map_err(|e| e.to_string())?;
+    db.set_setting(&key, &value).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn set_tray_visible(visible: bool, state: State<AppState>) -> Result<(), String> {
+    // Persist preference
+    {
+        let db = state.db.lock().map_err(|e| e.to_string())?;
+        db.set_setting("tray_visible", if visible { "true" } else { "false" })
+            .map_err(|e| e.to_string())?;
+    }
+
+    // Apply immediately via stored tray handle
+    #[cfg(desktop)]
+    {
+        let tray = state.tray.lock().map_err(|e| e.to_string())?;
+        if let Some(tray) = tray.as_ref() {
+            tray.set_visible(visible).map_err(|e| e.to_string())?;
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_open_at_login(enabled: bool, app: AppHandle, state: State<AppState>) -> Result<(), String> {
+    use tauri_plugin_autostart::ManagerExt;
+
+    // Persist preference
+    {
+        let db = state.db.lock().map_err(|e| e.to_string())?;
+        db.set_setting("open_at_login", if enabled { "true" } else { "false" })
+            .map_err(|e| e.to_string())?;
+    }
+
+    // Apply via autostart plugin
+    let autostart = app.autolaunch();
+    if enabled {
+        autostart.enable().map_err(|e| e.to_string())?;
+    } else {
+        autostart.disable().map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
 }
 
 #[tauri::command]

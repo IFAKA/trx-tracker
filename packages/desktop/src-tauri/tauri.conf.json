@@ -30,6 +30,13 @@
       "csp": null
     }
   },
+  "plugins": {
+    "autostart": {
+      "desktop": {
+        "args": false
+      }
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

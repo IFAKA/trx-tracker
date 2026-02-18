@@ -197,6 +197,25 @@ impl Database {
         Ok(())
     }
 
+    /// Get a generic setting from metadata table
+    pub fn get_setting(&self, key: &str) -> Result<Option<String>> {
+        let result: Option<String> = self.conn.query_row(
+            "SELECT value FROM metadata WHERE key = ?1",
+            params![key],
+            |row| row.get(0),
+        ).ok();
+        Ok(result)
+    }
+
+    /// Set a generic setting in metadata table
+    pub fn set_setting(&self, key: &str, value: &str) -> Result<()> {
+        self.conn.execute(
+            "INSERT OR REPLACE INTO metadata (key, value) VALUES (?1, ?2)",
+            params![key, value],
+        )?;
+        Ok(())
+    }
+
     // Helper: Parse JSON array from SQLite TEXT field
     fn parse_json_array(value: Option<String>) -> Option<Vec<i32>> {
         value.and_then(|s| serde_json::from_str(&s).ok())

@@ -18,6 +18,8 @@ pub struct AppState {
     pub device_id: String,
     pub blocker_state: Arc<Mutex<blocker::BlockerState>>,
     pub overlay_state: Arc<Mutex<overlay::OverlayState>>,
+    #[cfg(desktop)]
+    pub tray: Mutex<Option<tauri::tray::TrayIcon>>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -28,6 +30,13 @@ pub fn run() {
     // Initialize database
     let db = db::Database::new().expect("Failed to initialize database");
     let device_id = db.get_device_id().expect("Failed to get device ID");
+
+    // Read saved tray preference before moving db into Arc
+    let tray_visible = db.get_setting("tray_visible")
+        .ok()
+        .flatten()
+        .map(|v| v != "false")
+        .unwrap_or(true);
 
     // Create shared state
     let blocker_state = Arc::new(Mutex::new(blocker::BlockerState::new()));
@@ -46,11 +55,14 @@ pub fn run() {
         device_id,
         blocker_state: blocker_state.clone(),
         overlay_state: overlay_state.clone(),
+        #[cfg(desktop)]
+        tray: Mutex::new(None),
     };
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .manage(state)
         .invoke_handler(tauri::generate_handler![
             commands::get_all_sessions,
@@ -60,6 +72,10 @@ pub fn run() {
             commands::get_device_id,
             commands::check_mic_active,
             commands::get_qr_code_data,
+            commands::get_setting,
+            commands::set_setting,
+            commands::set_tray_visible,
+            commands::set_open_at_login,
             overlay::dismiss_micro_break,
         ])
         .setup(move |app| {
@@ -92,12 +108,12 @@ pub fn run() {
                 overlay::start_overlay(app_handle_clone, overlay_state_clone).await;
             });
 
-            // Create system tray icon
+            // Create system tray icon and store handle in AppState
             #[cfg(desktop)]
             {
                 use tauri::tray::{TrayIconBuilder, MouseButton, MouseButtonState};
 
-                let _tray = TrayIconBuilder::new()
+                let tray = TrayIconBuilder::new()
                     .icon(app.default_window_icon().unwrap().clone())
                     .tooltip("TrainDaily")
                     .on_tray_icon_event(|tray, event| {
@@ -115,6 +131,15 @@ pub fn run() {
                         }
                     })
                     .build(app)?;
+
+                // Apply saved tray visibility preference
+                if !tray_visible {
+                    let _ = tray.set_visible(false);
+                }
+
+                // Store tray handle in AppState for later toggle
+                let state = app.state::<AppState>();
+                *state.tray.lock().unwrap() = Some(tray);
             }
 
             Ok(())
