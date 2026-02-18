@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+
+    <!-- Bar gradient: embers at base, bright coral at peak -->
+    <linearGradient id="barGrad" x1="0" y1="1" x2="0" y2="0" gradientUnits="objectBoundingBox">
+      <stop offset="0%"   stop-color="#1C0800"/>
+      <stop offset="28%"  stop-color="#A83200"/>
+      <stop offset="68%"  stop-color="#FF5025"/>
+      <stop offset="100%" stop-color="#FF8A5B"/>
+    </linearGradient>
+
+    <!-- Subtle warm radial bloom behind bars -->
+    <radialGradient id="bgBloom" cx="62%" cy="65%" r="52%">
+      <stop offset="0%"   stop-color="#2E0E00" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0A0908" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Glow on dots and line -->
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Softer glow for the trend line -->
+    <filter id="lineGlow" x="-60%" y="-60%" width="220%" height="220%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Top-edge highlight on bars (inner top glow) -->
+    <linearGradient id="barSheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="30%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+  </defs>
+
+  <!-- ── BACKGROUND ── -->
+  <rect width="1024" height="1024" rx="230" fill="#0A0908"/>
+  <rect width="1024" height="1024" rx="230" fill="url(#bgBloom)"/>
+
+  <!-- ── FLOOR LINE ── -->
+  <line
+    x1="210" y1="860"
+    x2="814" y2="860"
+    stroke="#3A1600" stroke-width="3" stroke-linecap="round"
+    opacity="0.7"
+  />
+
+  <!-- ── BAR 1 — Push (left, shortest 38%) ── -->
+  <rect x="230" y="534" width="148" height="326" rx="18" fill="url(#barGrad)" opacity="0.68"/>
+  <rect x="230" y="534" width="148" height="120" rx="18" fill="url(#barSheen)" opacity="0.6"/>
+
+  <!-- ── BAR 2 — Pull (center, 62%) ── -->
+  <rect x="438" y="334" width="148" height="526" rx="18" fill="url(#barGrad)" opacity="0.84"/>
+  <rect x="438" y="334" width="148" height="120" rx="18" fill="url(#barSheen)" opacity="0.6"/>
+
+  <!-- ── BAR 3 — Legs (right, tallest 88%) ── -->
+  <rect x="646" y="154" width="148" height="706" rx="18" fill="url(#barGrad)"/>
+  <rect x="646" y="154" width="148" height="120" rx="18" fill="url(#barSheen)" opacity="0.6"/>
+
+  <!-- ── RISING TREND LINE (bar-top centers) ── -->
+  <!--  B1 cx=304 cy=534  |  B2 cx=512 cy=334  |  B3 cx=720 cy=154 -->
+  <polyline
+    points="304,534  512,334  720,154"
+    stroke="#FFD0A0"
+    stroke-width="8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+    filter="url(#lineGlow)"
+    opacity="0.88"
+  />
+
+  <!-- ── PEAK DOTS ── -->
+  <circle cx="304" cy="534" r="14" fill="#FFCF99" filter="url(#glow)" opacity="0.82"/>
+  <circle cx="512" cy="334" r="16" fill="#FFCF99" filter="url(#glow)" opacity="0.91"/>
+  <!-- Largest dot at the highest bar — visual emphasis on the peak -->
+  <circle cx="720" cy="154" r="20" fill="#FFD5A8" filter="url(#glow)"/>
+
+</svg>
