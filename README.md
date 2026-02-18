@@ -13,7 +13,11 @@ A no-excuses workout tracker with native desktop app (macOS) and mobile PWA that
    xattr -rd com.apple.quarantine ~/Downloads/TrainDaily-*.pkg
    ```
 3. Double-click the `.pkg` → macOS installer wizard → enter your password
-4. Done — TrainDaily is installed and will open automatically on login for all users
+4. **macOS 26 Tahoe only** — Gatekeeper may silently remove the app after install. If TrainDaily doesn't appear in `/Applications`, run:
+   ```bash
+   sudo xattr -dr com.apple.quarantine /Applications/TrainDaily.app
+   ```
+5. Done — TrainDaily is installed and will open automatically on login for all users
 
 **Mobile PWA**
 Visit [traindaily.vercel.app](https://traindaily.vercel.app) → Add to home screen for native-like experience.
@@ -288,6 +292,7 @@ npx playwright test --ui  # Run with UI
 |-------|----------|
 | `cargo: command not found` | Install Rust: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` → Restart terminal |
 | `missing xcrun` | Install Xcode Command Line Tools: `xcode-select --install` |
+| App missing from `/Applications` after install (macOS 26+) | Gatekeeper silently removed it. Run: `sudo xattr -dr com.apple.quarantine /Applications/TrainDaily.app` |
 | `Failed to initialize database` | Check permissions: `ls -la /Users/Shared/TrainDaily/` (should be readable/writable by all users) |
 | Mic detection not working | Grant microphone permission: System Preferences > Security & Privacy > Microphone<br>Check logs: `tail -f /Users/Shared/TrainDaily/logs/daemon.log` |
 
