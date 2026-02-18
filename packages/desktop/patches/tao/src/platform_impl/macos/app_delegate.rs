@@ -6,7 +6,7 @@ use crate::{
   platform::macos::ActivationPolicy,
   platform_impl::platform::{
     app_state::AppState,
-    ffi::{id, BOOL, YES},
+    ffi::{id, BOOL, YES, NO},
   },
 };
 
@@ -58,6 +58,10 @@ lazy_static! {
     decl.add_method(
       sel!(applicationDidFinishLaunching:),
       did_finish_launching as extern "C" fn(_, _, _),
+    );
+    decl.add_method(
+      sel!(applicationShouldTerminate:),
+      application_should_terminate as extern "C" fn(_, _, _) -> _,
     );
     decl.add_method(
       sel!(applicationWillTerminate:),
@@ -127,6 +131,13 @@ extern "C" fn did_finish_launching(this: &Object, _: Sel, _: id) {
   trace!("Triggered `applicationDidFinishLaunching`");
   AppState::launched(this);
   trace!("Completed `applicationDidFinishLaunching`");
+}
+
+extern "C" fn application_should_terminate(_: &Object, _: Sel, _: id) -> BOOL {
+  trace!("Triggered `applicationShouldTerminate`");
+  // Return NO to block system-initiated quit (Cmd+Q, Dock Quit).
+  // Programmatic exit via std::process::exit() bypasses this entirely.
+  NO
 }
 
 extern "C" fn application_will_terminate(_: &Object, _: Sel, _: id) {
