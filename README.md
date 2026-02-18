@@ -20,14 +20,7 @@ Visit [traindaily.vercel.app](https://traindaily.vercel.app) → Add to home scr
 
 **Uninstall Desktop App**
 ```bash
-sudo rm -rf /Applications/TrainDaily.app
-sudo rm -f /Library/LaunchAgents/com.traindaily.desktop.plist
-rm -f ~/Library/LaunchAgents/com.traindaily.desktop.plist   # Fixes Background Activity ghost entry
-rm -rf ~/Library/Application\ Support/com.traindaily.desktop  # App data, DB, auth token
-rm -f ~/Library/Preferences/com.traindaily.desktop.plist
-rm -rf ~/Library/Caches/com.traindaily.desktop
-rm -rf ~/Library/Logs/com.traindaily.desktop
-sudo rm -rf /Users/Shared/TrainDaily/   # Shared workout data (all users)
+sudo rm -rf /Applications/TrainDaily.app /Users/Shared/TrainDaily/ /Library/LaunchAgents/com.traindaily.desktop.plist && rm -rf ~/Library/Application\ Support/com.traindaily.desktop ~/Library/LaunchAgents/com.traindaily.desktop.plist ~/Library/Preferences/com.traindaily.desktop.plist ~/Library/Caches/com.traindaily.desktop ~/Library/Logs/com.traindaily.desktop
 ```
 
 ---
