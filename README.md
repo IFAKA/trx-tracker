@@ -22,8 +22,12 @@ Visit [traindaily.vercel.app](https://traindaily.vercel.app) → Add to home scr
 ```bash
 sudo rm -rf /Applications/TrainDaily.app
 sudo rm -f /Library/LaunchAgents/com.traindaily.desktop.plist
-rm -f ~/Library/LaunchAgents/com.traindaily.desktop.plist
-sudo rm -rf /Users/Shared/TrainDaily/   # Removes all workout data + logs
+rm -f ~/Library/LaunchAgents/com.traindaily.desktop.plist   # Fixes Background Activity ghost entry
+rm -rf ~/Library/Application\ Support/com.traindaily.desktop  # App data, DB, auth token
+rm -f ~/Library/Preferences/com.traindaily.desktop.plist
+rm -rf ~/Library/Caches/com.traindaily.desktop
+rm -rf ~/Library/Logs/com.traindaily.desktop
+sudo rm -rf /Users/Shared/TrainDaily/   # Shared workout data (all users)
 ```
 
 ---
