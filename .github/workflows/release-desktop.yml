@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch: # Allow manual trigger
 
+concurrency:
+  group: release
+  cancel-in-progress: true
+
 jobs:
   release:
     name: Build & Release
