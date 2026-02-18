@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { CSSProperties } from 'react';
 import { Timer, SkipForward, X, Pause, Play, RotateCcw } from 'lucide-react';
 import { Button } from './ui/button';
 import { REST_DURATION } from '@traindaily/core';
@@ -55,24 +56,20 @@ export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, on
 
       <Timer className="w-8 h-8 text-muted-foreground" />
 
-      {/* Circular timer */}
+      {/* Circular timer — conic-gradient ring, compositor-accelerated via @property */}
       <div className="relative w-48 h-48 flex items-center justify-center">
-        <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-          <circle
-            cx="50" cy="50" r="45"
-            fill="none" stroke="currentColor" strokeWidth="2"
-            className="text-muted/30"
-          />
-          <circle
-            cx="50" cy="50" r="45"
-            fill="none" stroke="currentColor" strokeWidth="3"
-            className={isPaused ? 'text-muted-foreground' : 'text-foreground'}
-            strokeDasharray={`${2 * Math.PI * 45}`}
-            strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
-            strokeLinecap="round"
-            style={{ transition: 'stroke-dashoffset 1s linear' }}
-          />
-        </svg>
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            '--timer-progress': progress,
+            background: isPaused
+              ? `conic-gradient(from -90deg, oklch(0.55 0 0) calc(var(--timer-progress) * 1%), oklch(0.70 0 0 / 25%) 0%)`
+              : `conic-gradient(from -90deg, oklch(0.95 0 0) calc(var(--timer-progress) * 1%), oklch(0.70 0 0 / 25%) 0%)`,
+            WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 6px), black calc(100% - 6px))',
+            mask: 'radial-gradient(farthest-side, transparent calc(100% - 6px), black calc(100% - 6px))',
+            transition: '--timer-progress 1s linear',
+          } as CSSProperties}
+        />
         <span
           className={`font-mono font-bold tracking-wider transition-colors duration-300 ${
             seconds <= 3 && seconds > 0
@@ -81,7 +78,7 @@ export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, on
                 ? 'text-muted-foreground text-5xl'
                 : 'text-5xl'
           }`}
-          style={seconds <= 3 && seconds > 0 ? { animation: 'countdown-pulse 1s ease-out' } : undefined}
+          style={seconds <= 3 && seconds > 0 ? { animation: 'countdown-pulse 0.15s ease-out' } : undefined}
           key={seconds <= 3 ? seconds : 'normal'}
         >
           {display}

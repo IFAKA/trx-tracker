@@ -143,7 +143,7 @@ export function ExerciseScreen({
               )}
               style={
                 i === currentSet - 1 && currentSet > 0
-                  ? { animation: 'dot-pop 400ms ease-out' }
+                  ? { animation: 'dot-pop 280ms ease-out' }
                   : undefined
               }
             />
@@ -212,12 +212,12 @@ export function ExerciseScreen({
           {flashColor === 'green' ? (
             <TrendingUp
               className="w-24 h-24 text-green-500"
-              style={{ animation: 'feedback-pop 600ms ease-out forwards' }}
+              style={{ animation: 'feedback-pop 400ms ease-out forwards' }}
             />
           ) : (
             <TrendingDown
               className="w-24 h-24 text-red-500"
-              style={{ animation: 'feedback-pop 600ms ease-out forwards' }}
+              style={{ animation: 'feedback-pop 400ms ease-out forwards' }}
             />
           )}
         </div>

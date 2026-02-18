@@ -108,6 +108,18 @@ export function playTargetHit() {
     gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
     osc2.start(ctx.currentTime + 0.1);
     osc2.stop(ctx.currentTime + 0.25);
+
+    // Resonant tail — decays with feedback-pop animation (400ms)
+    const osc3 = ctx.createOscillator();
+    const gain3 = ctx.createGain();
+    osc3.connect(gain3);
+    gain3.connect(ctx.destination);
+    osc3.type = 'triangle';
+    osc3.frequency.value = 780;
+    gain3.gain.setValueAtTime(0.06, ctx.currentTime + 0.2);
+    gain3.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc3.start(ctx.currentTime + 0.2);
+    osc3.stop(ctx.currentTime + 0.45);
   } catch {
     // Audio not available
   }
@@ -138,6 +150,18 @@ export function playTargetMiss() {
     gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
     osc2.start(ctx.currentTime + 0.1);
     osc2.stop(ctx.currentTime + 0.27);
+
+    // Resonant tail — decays with feedback-pop animation (400ms)
+    const osc3 = ctx.createOscillator();
+    const gain3 = ctx.createGain();
+    osc3.connect(gain3);
+    gain3.connect(ctx.destination);
+    osc3.type = 'triangle';
+    osc3.frequency.value = 350;
+    gain3.gain.setValueAtTime(0.05, ctx.currentTime + 0.22);
+    gain3.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc3.start(ctx.currentTime + 0.22);
+    osc3.stop(ctx.currentTime + 0.45);
   } catch {
     // Audio not available
   }
@@ -186,14 +210,30 @@ export function playRestComplete() {
   vibrate([60, 40, 100]);
 }
 
-/** Session complete — major chord arpeggio C5→E5→G5→C6 with warm attack */
+/** Session complete — impact thump + C5→E5→G5→C6 arpeggio, delayed 100ms to
+ *  align C6 peak with Trophy bounce-in overshoot at ~460ms */
 export function playSessionComplete() {
   const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
   const ctx = getContext();
   if (!ctx) return;
   try {
+    // Low thump at t=0 — matches the Trophy landing/bounce impulse
+    const thump = ctx.createOscillator();
+    const thumpGain = ctx.createGain();
+    thump.connect(thumpGain);
+    thumpGain.connect(ctx.destination);
+    thump.type = 'sine';
+    thump.frequency.setValueAtTime(120, ctx.currentTime);
+    thump.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.08);
+    thumpGain.gain.setValueAtTime(0.30, ctx.currentTime);
+    thumpGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    thump.start(ctx.currentTime);
+    thump.stop(ctx.currentTime + 0.12);
+
+    // Arpeggio starts at 100ms — C6 lands at 100+3×120=460ms, matching
+    // the Trophy overshoot peak (60% of 600ms animation + 100ms delay)
     notes.forEach((freq, i) => {
-      const start = ctx.currentTime + i * 0.12;
+      const start = ctx.currentTime + 0.1 + i * 0.12;
       playWarmNote(ctx, freq, start, 0.15, 0.35);
     });
   } catch {
@@ -263,6 +303,18 @@ export function playMobilityComplete() {
     // Audio not available
   }
   vibrate([80, 40, 80]);
+}
+
+/** Exercise begin — single soft 660 Hz sine, "ready to go" */
+export function playExerciseReady() {
+  playTone(660, 0.06, 0.15, 0, 'sine');
+}
+
+/** Undo last set — descending 440→330 Hz sine, "stepping back" */
+export function playUndo() {
+  playTone(440, 0.10, 0.20);
+  playTone(330, 0.12, 0.18, 0.09);
+  vibrate([30]);
 }
 
 // Haptic helpers

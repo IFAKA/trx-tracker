@@ -98,8 +98,22 @@ export function playSessionComplete() {
   const ctx = getContext();
   if (!ctx) return;
   try {
+    // Low thump at t=0 — matches the Trophy bounce impulse
+    const thump = ctx.createOscillator();
+    const thumpGain = ctx.createGain();
+    thump.connect(thumpGain);
+    thumpGain.connect(ctx.destination);
+    thump.type = 'sine';
+    thump.frequency.setValueAtTime(120, ctx.currentTime);
+    thump.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.08);
+    thumpGain.gain.setValueAtTime(0.30, ctx.currentTime);
+    thumpGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    thump.start(ctx.currentTime);
+    thump.stop(ctx.currentTime + 0.12);
+
+    // Arpeggio delayed 100ms — C6 aligns with Trophy overshoot at ~460ms
     notes.forEach((freq, i) => {
-      const start = ctx.currentTime + i * 0.12;
+      const start = ctx.currentTime + 0.1 + i * 0.12;
       playWarmNote(ctx, freq, start, 0.15, 0.35);
     });
   } catch {

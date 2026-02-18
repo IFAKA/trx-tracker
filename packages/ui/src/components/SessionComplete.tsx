@@ -88,7 +88,7 @@ export function SessionComplete(props: SessionCompleteProps) {
           key={ex.key}
           className="bg-card/50"
           style={{
-            animation: 'stagger-in 400ms ease-out backwards',
+            animation: 'stagger-in 260ms ease-out backwards',
             animationDelay: `${500 + index * 80}ms`,
           }}
         >
@@ -121,7 +121,7 @@ export function SessionComplete(props: SessionCompleteProps) {
         key={ex.name}
         className="bg-card/50"
         style={{
-          animation: 'stagger-in 400ms ease-out backwards',
+          animation: 'stagger-in 260ms ease-out backwards',
           animationDelay: `${500 + index * 80}ms`,
         }}
       >
@@ -153,18 +153,18 @@ export function SessionComplete(props: SessionCompleteProps) {
       <div className="flex-1 flex flex-col items-center justify-center gap-4">
         <Trophy
           className="w-16 h-16 text-yellow-500"
-          style={{ animation: 'bounce-in 600ms ease-out 100ms backwards' }}
+          style={{ animation: 'bounce-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms backwards' }}
         />
         <h1
           className="text-2xl font-bold tracking-tight"
-          style={{ animation: 'slide-up-in 500ms ease-out 300ms backwards' }}
+          style={{ animation: 'slide-up-in 260ms ease-out 200ms backwards' }}
         >
           {isWorkout ? 'SESSION COMPLETE' : 'MOBILITY COMPLETE'}
         </h1>
         {hasDifficultyIncrease && (
           <p
             className="text-xs text-orange-400 uppercase tracking-widest font-mono"
-            style={{ animation: 'slide-up-in 500ms ease-out 500ms backwards' }}
+            style={{ animation: 'slide-up-in 260ms ease-out 340ms backwards' }}
           >
             ↑ DIFFICULTY UP NEXT SESSION
           </p>
@@ -172,7 +172,7 @@ export function SessionComplete(props: SessionCompleteProps) {
         {!isWorkout && mobilityProps?.nextTraining && (
           <p
             className="text-sm text-muted-foreground"
-            style={{ animation: 'slide-up-in 500ms ease-out 400ms backwards' }}
+            style={{ animation: 'slide-up-in 260ms ease-out 280ms backwards' }}
           >
             NEXT: {mobilityProps.nextTraining}
           </p>
@@ -183,7 +183,7 @@ export function SessionComplete(props: SessionCompleteProps) {
       <div className="w-full max-w-sm space-y-2">
         <div
           className="flex items-center justify-between px-4 text-xs text-muted-foreground uppercase tracking-widest"
-          style={{ animation: 'stagger-in 400ms ease-out 400ms backwards' }}
+          style={{ animation: 'stagger-in 260ms ease-out 280ms backwards' }}
         >
           <span>Exercise</span>
           <span>{isWorkout ? 'Sets' : 'Duration'}</span>
@@ -195,7 +195,7 @@ export function SessionComplete(props: SessionCompleteProps) {
       <div
         className="flex items-center gap-3 w-full max-w-sm"
         style={{
-          animation: 'stagger-in 400ms ease-out backwards',
+          animation: 'stagger-in 260ms ease-out backwards',
           animationDelay: `${500 + cardCount * 80}ms`,
         }}
       >

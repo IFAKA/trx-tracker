@@ -42,6 +42,8 @@ export interface UseWorkoutOptions {
     playNextExercise?: () => void;
     playSkip?: () => void;
     playSessionComplete?: () => void;
+    playExerciseReady?: () => void;
+    playUndo?: () => void;
   };
 
   /** Optional wake lock handlers (browser/mobile) */
@@ -239,8 +241,9 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
   }, [currentSet, setsPerExercise, exerciseIndex, exercises]);
 
   const finishTransition = useCallback(() => {
+    audioCallbacks.playExerciseReady?.();
     setState('exercising');
-  }, []);
+  }, [audioCallbacks]);
 
   const completeSession = useCallback(() => {
     (async () => {
@@ -259,8 +262,8 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
 
       const updatedData = await storageAdapter.loadWorkoutData();
       setData(updatedData);
-      setState('complete');
       audioCallbacks.playSessionComplete?.();
+      setState('complete');
       onWakeLockRelease?.();
     })();
   }, [dateKey, weekNumber, sessionReps, storageAdapter, audioCallbacks, onWakeLockRelease, exercises, workoutType]);
@@ -320,8 +323,8 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
 
             const updatedData = await storageAdapter.loadWorkoutData();
             setData(updatedData);
-            setState('complete');
             audioCallbacks.playSessionComplete?.();
+            setState('complete');
             onWakeLockRelease?.();
           })();
         }, 700);
@@ -354,9 +357,14 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    audioCallbacks.playSkip?.();
+    // Only play skip when staying on the same exercise (next set).
+    // When advancing to next exercise, advanceAfterRest plays playNextExercise instead.
+    const movingToNextExercise = currentSet + 1 >= setsPerExercise;
+    if (!movingToNextExercise) {
+      audioCallbacks.playSkip?.();
+    }
     advanceAfterRest();
-  }, [advanceAfterRest, audioCallbacks]);
+  }, [advanceAfterRest, audioCallbacks, currentSet, setsPerExercise]);
 
   const quitWorkout = useCallback(() => {
     if (timerRef.current) {
@@ -386,9 +394,10 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
       if (current.length === 0) return prev;
       return { ...prev, [key]: current.slice(0, -1) };
     });
+    audioCallbacks.playUndo?.();
     setTimer(REST_DURATION);
     setState('exercising');
-  }, [currentExercise]);
+  }, [currentExercise, audioCallbacks]);
 
   const refreshData = useCallback(() => {
     (async () => {

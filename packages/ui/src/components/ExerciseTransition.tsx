@@ -21,23 +21,23 @@ export function ExerciseTransition({ exerciseName, onComplete }: ExerciseTransit
     >
       <ArrowRight
         className="w-8 h-8 text-muted-foreground"
-        style={{ animation: 'slide-down-in 500ms ease-out backwards' }}
+        style={{ animation: 'slide-down-in 260ms ease-out backwards' }}
       />
       <p
         className="text-xs uppercase tracking-widest text-muted-foreground"
-        style={{ animation: 'stagger-in 400ms ease-out 150ms backwards' }}
+        style={{ animation: 'stagger-in 260ms ease-out 80ms backwards' }}
       >
         Next up
       </p>
       <h1
         className="text-2xl font-bold tracking-tight text-center"
-        style={{ animation: 'slide-up-in 500ms ease-out 300ms backwards' }}
+        style={{ animation: 'slide-up-in 260ms ease-out 160ms backwards' }}
       >
         {exerciseName}
       </h1>
       <p
         className="text-xs text-muted-foreground/40 mt-2"
-        style={{ animation: 'stagger-in 400ms ease-out 600ms backwards' }}
+        style={{ animation: 'stagger-in 260ms ease-out 280ms backwards' }}
       >
         Tap to continue
       </p>

@@ -17,6 +17,8 @@ import {
   playNextExercise,
   playSkip,
   playSessionComplete,
+  playExerciseReady,
+  playUndo,
 } from '@/lib/audio';
 
 export function useWorkout(date: Date) {
@@ -155,6 +157,7 @@ export function useWorkout(date: Date) {
   }, [currentSet, setsPerExercise, exerciseIndex]);
 
   const finishTransition = useCallback(() => {
+    playExerciseReady();
     setState('exercising');
   }, []);
 
@@ -172,8 +175,8 @@ export function useWorkout(date: Date) {
     saveSession(dateKey, session);
     setFirstSessionDate(dateKey);
     setData(loadWorkoutData());
-    setState('complete');
     playSessionComplete();
+    setState('complete');
     releaseWakeLock();
   }, [dateKey, weekNumber, sessionReps, releaseWakeLock, EXERCISES, workoutType]);
 
@@ -229,8 +232,8 @@ export function useWorkout(date: Date) {
           saveSession(dateKey, session);
           setFirstSessionDate(dateKey);
           setData(loadWorkoutData());
-          setState('complete');
           playSessionComplete();
+          setState('complete');
           releaseWakeLock();
         }, 700);
       } else {
@@ -258,9 +261,14 @@ export function useWorkout(date: Date) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    playSkip();
+    // Only play skip when staying on the same exercise (next set).
+    // When advancing to next exercise, advanceAfterRest plays playNextExercise instead.
+    const movingToNextExercise = currentSet + 1 >= setsPerExercise;
+    if (!movingToNextExercise) {
+      playSkip();
+    }
     advanceAfterRest();
-  }, [advanceAfterRest]);
+  }, [advanceAfterRest, currentSet, setsPerExercise]);
 
   const quitWorkout = useCallback(() => {
     if (timerRef.current) {
@@ -312,6 +320,7 @@ export function useWorkout(date: Date) {
       if (current.length === 0) return prev;
       return { ...prev, [key]: current.slice(0, -1) };
     });
+    playUndo();
     setTimer(REST_DURATION);
     setState('exercising');
   }, [currentExercise]);
