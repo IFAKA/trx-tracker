@@ -37,13 +37,31 @@ jobs:
         with:
           version: 10
 
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "store=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin
 
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workingDirectory: packages/desktop/src-tauri
+          cache-targets: true
+          cache-on-failure: true
+
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --filter @traindaily/desktop...
 
       - name: Run semantic-release (version bump)
         uses: cycjimmy/semantic-release-action@v4
