@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+PLIST="/Library/LaunchAgents/com.traindaily.desktop.plist"
+
+# Fix ownership and permissions
+chown root:wheel "$PLIST"
+chmod 644 "$PLIST"
+
+# Re-sign the app so macOS accepts it without Gatekeeper prompts
+codesign --force --deep --sign - /Applications/TrainDaily.app 2>/dev/null || true
+
+exit 0
