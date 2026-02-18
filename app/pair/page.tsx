@@ -4,42 +4,51 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle, Smartphone, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { parseQRData, saveDesktopInfo } from '@/lib/sync-client';
+import { parseQRData, saveDesktopInfo, verifyPairing } from '@/lib/sync-client';
+
+type Status = 'connecting' | 'success' | 'error';
 
 export default function PairPage() {
   const router = useRouter();
-  const [status, setStatus] = useState<'parsing' | 'success' | 'error'>('parsing');
-  const [deviceId, setDeviceId] = useState<string>('');
+  const [status, setStatus] = useState<Status>('connecting');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    // Get pairing data from URL params
-    const url = window.location.href;
+    async function pair() {
+      const desktopInfo = parseQRData(window.location.href);
 
-    // Parse QR code data
-    const desktopInfo = parseQRData(url);
+      if (!desktopInfo) {
+        setErrorMessage('Invalid QR code — please try scanning again.');
+        setStatus('error');
+        return;
+      }
 
-    if (!desktopInfo) {
-      setStatus('error');
-      return;
+      const result = await verifyPairing(desktopInfo);
+
+      if (!result.ok) {
+        setErrorMessage(result.error ?? 'Pairing failed.');
+        setStatus('error');
+        return;
+      }
+
+      saveDesktopInfo(desktopInfo);
+      setStatus('success');
+
+      setTimeout(() => {
+        router.push('/');
+      }, 1500);
     }
 
-    // Save desktop info
-    saveDesktopInfo(desktopInfo);
-    setDeviceId(desktopInfo.deviceId);
-    setStatus('success');
-
-    // Auto-redirect after 2 seconds
-    setTimeout(() => {
-      router.push('/');
-    }, 2000);
+    pair();
   }, [router]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-6">
-      {status === 'parsing' && (
+      {status === 'connecting' && (
         <>
-          <Smartphone className="w-16 h-16 animate-pulse" />
-          <h1 className="text-2xl font-bold tracking-tight">PAIRING...</h1>
+          <Smartphone className="w-16 h-16 animate-pulse text-muted-foreground" />
+          <h1 className="text-2xl font-bold tracking-tight">CONNECTING...</h1>
+          <p className="text-sm text-muted-foreground">Verifying connection to desktop</p>
         </>
       )}
 
@@ -47,17 +56,7 @@ export default function PairPage() {
         <>
           <CheckCircle className="w-16 h-16 text-green-500" />
           <h1 className="text-2xl font-bold tracking-tight">PAIRED!</h1>
-          <p className="text-sm text-muted-foreground text-center max-w-sm">
-            Successfully paired with desktop
-          </p>
-          {deviceId && (
-            <div className="text-xs text-muted-foreground/60 font-mono">
-              {deviceId}
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground/60">
-            Redirecting to home...
-          </p>
+          <p className="text-xs text-muted-foreground/60">Redirecting to home...</p>
         </>
       )}
 
@@ -65,12 +64,8 @@ export default function PairPage() {
         <>
           <AlertCircle className="w-16 h-16 text-destructive" />
           <h1 className="text-2xl font-bold tracking-tight">PAIRING FAILED</h1>
-          <p className="text-sm text-muted-foreground text-center max-w-sm">
-            Invalid QR code data. Please try scanning again.
-          </p>
-          <Button onClick={() => router.push('/')}>
-            Back to Home
-          </Button>
+          <p className="text-sm text-muted-foreground text-center max-w-sm">{errorMessage}</p>
+          <Button onClick={() => router.push('/')}>Back to Home</Button>
         </>
       )}
     </div>

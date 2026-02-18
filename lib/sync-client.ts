@@ -213,6 +213,38 @@ export async function syncWithDesktop(): Promise<{ success: boolean; message: st
   }
 }
 
+// Verify pairing by actually pinging the desktop
+export async function verifyPairing(info: DesktopInfo): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(`https://${info.lastKnownIp}:${info.port}/api/ping`, {
+      signal: controller.signal,
+      // @ts-ignore - required for self-signed certs
+      mode: 'cors',
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      return { ok: false, error: 'Desktop responded with an error' };
+    }
+
+    const { deviceId } = await response.json();
+    if (deviceId !== info.deviceId) {
+      return { ok: false, error: 'Device ID mismatch — wrong device?' };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      return { ok: false, error: 'Connection timed out — make sure the desktop app is running on the same network' };
+    }
+    return { ok: false, error: 'Could not reach desktop — make sure both devices are on the same Wi-Fi' };
+  }
+}
+
 // Parse QR code data (format: https://traindaily.vercel.app/pair?deviceId=...&ip=...&port=...&secret=...)
 export function parseQRData(url: string): DesktopInfo | null {
   try {
