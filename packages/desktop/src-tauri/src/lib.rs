@@ -38,6 +38,9 @@ pub fn run() {
         .map(|v| v != "false")
         .unwrap_or(true);
 
+    // On first launch, enable open-at-login automatically
+    let is_first_run = db.get_setting("open_at_login").ok().flatten().is_none();
+
     // Create shared state
     let blocker_state = Arc::new(Mutex::new(blocker::BlockerState::new()));
     let overlay_state = Arc::new(Mutex::new(overlay::OverlayState::new()));
@@ -80,6 +83,16 @@ pub fn run() {
         ])
         .setup(move |app| {
             let app_handle = app.handle().clone();
+
+            // Enable open-at-login on first launch
+            if is_first_run {
+                use tauri_plugin_autostart::ManagerExt;
+                let _ = app.autolaunch().enable();
+                let state = app.state::<AppState>();
+                if let Ok(db) = state.db.lock() {
+                    let _ = db.set_setting("open_at_login", "true");
+                }
+            }
 
             // Start sync server
             let db_clone = db_for_sync.clone();
