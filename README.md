@@ -16,7 +16,9 @@ Visit [traindaily.vercel.app](https://traindaily.vercel.app) → Add to home scr
 
 **Uninstall Desktop App**
 ```bash
-sudo bash /Applications/TrainDaily.app/Contents/Resources/uninstall.sh
+sudo rm -rf /Applications/TrainDaily.app
+sudo rm -f /Library/LaunchAgents/com.traindaily.desktop.plist
+rm -f ~/Library/LaunchAgents/com.traindaily.desktop.plist
 ```
 
 ---
@@ -86,11 +88,12 @@ vercel deploy --prod
 traindaily/
 ├── packages/
 │   ├── core/              # Platform-agnostic business logic (TypeScript)
+│   ├── ui/                # Shared React components (used by PWA + desktop)
 │   ├── design-system/     # Apple design tokens & sounds
 │   └── desktop/           # Tauri app (Rust backend + React frontend)
 ├── app/                   # Next.js PWA (mobile)
-├── components/            # Shared React components
-└── lib/                   # Shared utilities
+├── components/            # PWA-specific React components
+└── lib/                   # PWA-specific utilities
 ```
 
 **Desktop Features**
@@ -103,6 +106,7 @@ traindaily/
 - Local sync server: HTTPS server for syncing with mobile
 - Multi-user support: Works across macOS user accounts (personal ↔ work)
 - SQLite storage at `/Users/Shared/TrainDaily/`
+- Settings: menu bar toggle, open-at-login (enabled by default on first launch)
 
 **Mobile PWA Features**
 - Same workout features as desktop (full parity)
@@ -141,8 +145,8 @@ traindaily/
 4. Calf Raises
 
 **Progressive Overload System**
-- Weeks 1-2: 3 sets per exercise
-- Weeks 3+: 4 sets per exercise
+- Weeks 1-4: 2 sets per exercise
+- Week 5+: 3 sets per exercise
 - Rep range: 8-12 reps per set
 - When all sets hit 12+ reps → increase difficulty (angle, tempo, ROM)
 - Rest: 90-120 seconds between sets
@@ -248,14 +252,15 @@ npx playwright test --ui  # Run with UI
 
 **Desktop Frontend** (`packages/desktop/src/`)
 ```
-├── components/        # React UI (copied from PWA)
+├── components/        # Desktop-specific screens (BlockerScreen, PairingScreen, etc.)
 ├── hooks/            # Platform-specific hook wrappers
 ├── lib/
 │   ├── storage-tauri.ts   # SQLite adapter
 │   ├── audio.ts          # Web Audio sound engine
 │   └── sync-client.ts    # Desktop discovery & sync
-└── App.tsx           # Main app with routing
+└── App.tsx           # Main app entry
 ```
+*Shared UI components live in `packages/ui` and are consumed by both desktop and PWA.*
 
 **Core Package** (`packages/core/`)
 ```
@@ -299,8 +304,8 @@ npx playwright test --ui  # Run with UI
 6. Push and create a Pull Request
 
 **Useful Documentation**
-- [`MIGRATION_COMPLETE.md`](MIGRATION_COMPLETE.md) - Full migration documentation
-- [`MIGRATION_PROGRESS.md`](MIGRATION_PROGRESS.md) - Phase-by-phase progress tracker
+- [`docs/MIGRATION_COMPLETE.md`](docs/MIGRATION_COMPLETE.md) - Full migration documentation
+- [`docs/MIGRATION_PROGRESS.md`](docs/MIGRATION_PROGRESS.md) - Phase-by-phase progress tracker
 - [`packages/core/README.md`](packages/core/README.md) - Core package API docs
 - [`packages/desktop/README.md`](packages/desktop/README.md) - Desktop app architecture
 
