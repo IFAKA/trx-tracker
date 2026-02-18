@@ -26,10 +26,33 @@ import { syncWithDesktop, getStoredDesktopInfo } from '@/lib/sync-client';
 
 const ONBOARDING_KEY = 'traindaily_onboarding_completed';
 
+function useOfflineIndicator() {
+  const [isOnline, setIsOnline] = useState(true);
+  const [showBackOnline, setShowBackOnline] = useState(false);
+
+  useEffect(() => {
+    const handleOffline = () => setIsOnline(false);
+    const handleOnline = () => {
+      setIsOnline(true);
+      setShowBackOnline(true);
+      setTimeout(() => setShowBackOnline(false), 2000);
+    };
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, []);
+
+  return { isOnline, showBackOnline };
+}
+
 export function TodayScreen() {
   const [mounted, setMounted] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const devtools = useDevTools();
+  const { isOnline, showBackOnline } = useOfflineIndicator();
 
   useEffect(() => {
     setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
@@ -51,19 +74,32 @@ export function TodayScreen() {
     setShowOnboarding(false);
   };
 
+  const offlineLine = (
+    <div
+      className="fixed top-0 left-0 right-0 h-[2px] z-50 transition-all duration-500"
+      style={{
+        backgroundColor: showBackOnline ? 'oklch(0.7 0.2 145)' : !isOnline ? 'oklch(0.75 0.15 60)' : 'transparent',
+        opacity: isOnline && !showBackOnline ? 0 : 1,
+      }}
+    />
+  );
+
   if (showOnboarding) {
-    return <Onboarding onComplete={handleCompleteOnboarding} />;
+    return <>{offlineLine}<Onboarding onComplete={handleCompleteOnboarding} /></>;
   }
 
   if (!today) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Dumbbell className="w-8 h-8 animate-pulse" />
-      </div>
+      <>
+        {offlineLine}
+        <div className="flex items-center justify-center min-h-screen bg-background">
+          <Dumbbell className="w-8 h-8 animate-pulse" />
+        </div>
+      </>
     );
   }
 
-  return <TodayContent date={today} />;
+  return <>{offlineLine}<TodayContent date={today} /></>;
 }
 
 function TodayContent({ date }: { date: Date }) {
