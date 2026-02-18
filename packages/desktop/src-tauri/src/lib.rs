@@ -185,9 +185,9 @@ pub fn run() {
                 *state.tray.lock().unwrap() = Some(tray);
             }
 
-            // Run as accessory (no Dock icon, no Cmd+Tab) — tray-only app
+            // Run as regular app (Dock icon + Cmd+Tab visible)
             #[cfg(target_os = "macos")]
-            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            app.set_activation_policy(tauri::ActivationPolicy::Regular);
 
             // Hide window instead of quitting when user closes it
             let main_window = app.get_webview_window("main").unwrap();
@@ -203,5 +203,13 @@ pub fn run() {
         })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(|_app_handle, _event| {});
+        .run(|app_handle, event| {
+            // Cmd+Q hides the app instead of quitting (Raycast-style)
+            if let tauri::RunEvent::ExitRequested { api, .. } = event {
+                api.prevent_exit();
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    let _ = window.hide();
+                }
+            }
+        });
 }
