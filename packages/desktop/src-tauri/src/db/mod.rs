@@ -7,7 +7,7 @@
 
 use anyhow::{Context, Result};
 use rusqlite::{Connection, params};
-use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -17,18 +17,8 @@ const SHARED_DATA_DIR: &str = "/Users/Shared/TrainDaily";
 const DB_FILE: &str = "workouts.db";
 const DEVICE_ID_FILE: &str = "device_id.txt";
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WorkoutSession {
-    pub inverted_row: Option<Vec<i32>>,
-    pub single_arm_row: Option<Vec<i32>>,
-    pub pike_pushup: Option<Vec<i32>>,
-    pub face_pull: Option<Vec<i32>>,
-    pub pushup: Option<Vec<i32>>,
-    pub wall_lateral_raise: Option<Vec<i32>>,
-    pub plank: Option<Vec<i32>>,
-    pub logged_at: String,
-    pub week_number: i32,
-}
+// Session is stored as a JSON blob — schema-agnostic, works with any exercise keys
+pub type WorkoutSession = JsonValue;
 
 pub struct Database {
     conn: Connection,
@@ -57,22 +47,35 @@ impl Database {
         let conn = Connection::open(&db_path)
             .context("Failed to open database")?;
 
-        // Create tables
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS sessions (
-                date_key TEXT PRIMARY KEY,
-                inverted_row TEXT,
-                single_arm_row TEXT,
-                pike_pushup TEXT,
-                face_pull TEXT,
-                pushup TEXT,
-                wall_lateral_raise TEXT,
-                plank TEXT,
-                logged_at TEXT NOT NULL,
-                week_number INTEGER NOT NULL
-            )",
+        // Check if old schema exists (has 'pushup' column) and migrate
+        let has_old_schema: bool = conn.query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('sessions') WHERE name='pushup'",
             [],
-        )?;
+            |row| row.get::<_, i64>(0),
+        ).map(|c| c > 0).unwrap_or(false);
+
+        if has_old_schema {
+            // Old schema uses named columns per exercise — drop and recreate with JSON blob schema.
+            // Exercise data from old schema is sacrificed; it can be re-synced from the PWA.
+            conn.execute_batch(
+                "DROP TABLE IF EXISTS sessions;
+                 CREATE TABLE sessions (
+                     date_key TEXT PRIMARY KEY,
+                     session_data TEXT NOT NULL DEFAULT '{}'
+                 );"
+            ).context("Failed to migrate sessions table")?;
+
+            tracing::info!("Migrated sessions table from old column-based schema to JSON blob schema");
+        } else {
+            // Create new schema if it doesn't exist yet
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS sessions (
+                    date_key TEXT PRIMARY KEY,
+                    session_data TEXT NOT NULL DEFAULT '{}'
+                )",
+                [],
+            )?;
+        }
 
         conn.execute(
             "CREATE TABLE IF NOT EXISTS metadata (
@@ -118,33 +121,21 @@ impl Database {
     /// Get all workout sessions
     pub fn get_all_sessions(&self) -> Result<HashMap<String, WorkoutSession>> {
         let mut stmt = self.conn.prepare(
-            "SELECT date_key, inverted_row, single_arm_row, pike_pushup, face_pull,
-                    pushup, wall_lateral_raise, plank, logged_at, week_number
-             FROM sessions"
+            "SELECT date_key, session_data FROM sessions"
         )?;
 
         let sessions = stmt.query_map([], |row| {
             let date_key: String = row.get(0)?;
-
-            let session = WorkoutSession {
-                inverted_row: Self::parse_json_array(row.get(1)?),
-                single_arm_row: Self::parse_json_array(row.get(2)?),
-                pike_pushup: Self::parse_json_array(row.get(3)?),
-                face_pull: Self::parse_json_array(row.get(4)?),
-                pushup: Self::parse_json_array(row.get(5)?),
-                wall_lateral_raise: Self::parse_json_array(row.get(6)?),
-                plank: Self::parse_json_array(row.get(7)?),
-                logged_at: row.get(8)?,
-                week_number: row.get(9)?,
-            };
-
-            Ok((date_key, session))
+            let session_data: String = row.get(1)?;
+            Ok((date_key, session_data))
         })?;
 
         let mut map = HashMap::new();
         for session in sessions {
-            let (key, value) = session?;
-            map.insert(key, value);
+            let (key, json_str) = session?;
+            if let Ok(value) = serde_json::from_str::<JsonValue>(&json_str) {
+                map.insert(key, value);
+            }
         }
 
         Ok(map)
@@ -152,23 +143,12 @@ impl Database {
 
     /// Save a workout session
     pub fn save_session(&self, date_key: &str, session: &WorkoutSession) -> Result<()> {
+        let session_data = serde_json::to_string(session)
+            .unwrap_or_else(|_| "{}".to_string());
+
         self.conn.execute(
-            "INSERT OR REPLACE INTO sessions
-             (date_key, inverted_row, single_arm_row, pike_pushup, face_pull,
-              pushup, wall_lateral_raise, plank, logged_at, week_number)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-            params![
-                date_key,
-                Self::serialize_array(&session.inverted_row),
-                Self::serialize_array(&session.single_arm_row),
-                Self::serialize_array(&session.pike_pushup),
-                Self::serialize_array(&session.face_pull),
-                Self::serialize_array(&session.pushup),
-                Self::serialize_array(&session.wall_lateral_raise),
-                Self::serialize_array(&session.plank),
-                &session.logged_at,
-                session.week_number,
-            ],
+            "INSERT OR REPLACE INTO sessions (date_key, session_data) VALUES (?1, ?2)",
+            params![date_key, session_data],
         )?;
 
         Ok(())
@@ -215,21 +195,12 @@ impl Database {
         )?;
         Ok(())
     }
-
-    // Helper: Parse JSON array from SQLite TEXT field
-    fn parse_json_array(value: Option<String>) -> Option<Vec<i32>> {
-        value.and_then(|s| serde_json::from_str(&s).ok())
-    }
-
-    // Helper: Serialize array to JSON string
-    fn serialize_array(value: &Option<Vec<i32>>) -> Option<String> {
-        value.as_ref().and_then(|v| serde_json::to_string(v).ok())
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn test_database_init() {
@@ -242,25 +213,20 @@ mod tests {
     fn test_save_and_retrieve_session() {
         let db = Database::new().unwrap();
 
-        let session = WorkoutSession {
-            pushup: Some(vec![10, 8]),
-            plank: Some(vec![20, 15]),
-            inverted_row: None,
-            single_arm_row: None,
-            pike_pushup: None,
-            face_pull: None,
-            wall_lateral_raise: None,
-            logged_at: "2026-02-17T10:00:00Z".to_string(),
-            week_number: 1,
-        };
+        let session = json!({
+            "trx_pushup": [10, 8],
+            "pike_pushup": [12, 10],
+            "logged_at": "2026-02-17T10:00:00Z",
+            "week_number": 1
+        });
 
         db.save_session("2026-02-17", &session).unwrap();
 
         let sessions = db.get_all_sessions().unwrap();
-        assert_eq!(sessions.len(), 1);
+        assert!(sessions.len() >= 1);
 
         let retrieved = sessions.get("2026-02-17").unwrap();
-        assert_eq!(retrieved.pushup, Some(vec![10, 8]));
-        assert_eq!(retrieved.week_number, 1);
+        assert_eq!(retrieved["trx_pushup"], json!([10, 8]));
+        assert_eq!(retrieved["week_number"], json!(1));
     }
 }

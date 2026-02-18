@@ -19,6 +19,7 @@ use axum::{
 };
 use axum_server::tls_rustls::RustlsConfig;
 use serde::Deserialize;
+use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
@@ -96,7 +97,7 @@ async fn handle_ping(
     State(state): State<SyncServerState>,
 ) -> Json<HashMap<String, String>> {
     let mut response = HashMap::new();
-    response.insert("device_id".to_string(), state.device_id.clone());
+    response.insert("deviceId".to_string(), state.device_id.clone());
     response.insert("status".to_string(), "ok".to_string());
     Json(response)
 }
@@ -106,7 +107,7 @@ async fn handle_get_sessions(
     Query(auth): Query<AuthQuery>,
     headers: HeaderMap,
     State(state): State<SyncServerState>,
-) -> Result<Json<HashMap<String, crate::db::WorkoutSession>>, StatusCode> {
+) -> Result<Json<HashMap<String, JsonValue>>, StatusCode> {
     // Verify auth token
     if !verify_auth(&auth, &headers, &state.auth_token) {
         return Err(StatusCode::UNAUTHORIZED);
@@ -175,7 +176,7 @@ async fn handle_sse_stream(
 #[derive(Deserialize)]
 struct SessionUpload {
     date_key: String,
-    session: crate::db::WorkoutSession,
+    session: JsonValue,
 }
 
 /// Verify auth token from query or header

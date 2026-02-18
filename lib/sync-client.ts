@@ -150,24 +150,60 @@ export async function syncWithDesktop(): Promise<{ success: boolean; message: st
 
     const desktopSessions: WorkoutData = await response.json();
 
-    // Merge with local data (desktop is source of truth)
+    // Deep merge: combine local and desktop data
+    // For the same date, merge at the exercise key level (both sides keep their exercises)
+    // logged_at and week_number: prefer whichever was logged later
     const localData = loadWorkoutData();
-    const merged = { ...localData, ...desktopSessions };
+    const merged: WorkoutData = { ...localData };
+
+    for (const [dateKey, desktopSession] of Object.entries(desktopSessions)) {
+      const localSession = localData[dateKey];
+      if (!localSession) {
+        // Desktop has a date we don't — take it as-is
+        merged[dateKey] = desktopSession;
+      } else {
+        // Both have this date — merge exercise keys from both sides.
+        // For shared keys, prefer whichever session was logged later.
+        const localTime = new Date(localSession.logged_at || 0).getTime();
+        const desktopTime = new Date(desktopSession.logged_at || 0).getTime();
+        const preferDesktop = desktopTime >= localTime;
+        // Spread: all keys from both sides, newer session wins on conflicts
+        merged[dateKey] = preferDesktop
+          ? { ...localSession, ...desktopSession }
+          : { ...desktopSession, ...localSession };
+      }
+    }
+
     saveWorkoutData(merged);
 
-    // Push any local-only sessions to desktop
+    // Push sessions that desktop doesn't have (or that we have newer data for)
+    const uploadErrors: string[] = [];
     for (const [dateKey, session] of Object.entries(localData)) {
-      if (!desktopSessions[dateKey]) {
-        // Upload to desktop
-        await fetch(`${desktopUrl}/api/sync/session`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${desktop.authToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ dateKey, session }),
-        });
+      const desktopSession = desktopSessions[dateKey];
+      const shouldUpload = !desktopSession ||
+        new Date(session.logged_at || 0) > new Date(desktopSession.logged_at || 0);
+
+      if (shouldUpload) {
+        try {
+          const uploadRes = await fetch(`${desktopUrl}/api/sync/session`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${desktop.authToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ dateKey, session }),
+          });
+          if (!uploadRes.ok) {
+            uploadErrors.push(dateKey);
+          }
+        } catch {
+          uploadErrors.push(dateKey);
+        }
       }
+    }
+
+    if (uploadErrors.length > 0) {
+      return { success: true, message: `Synced (${uploadErrors.length} session(s) failed to upload)` };
     }
 
     return { success: true, message: 'Synced successfully' };
