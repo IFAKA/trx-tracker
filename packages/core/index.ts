@@ -21,6 +21,4 @@ export * from './lib/storage-interface';
 
 // React hooks
 export * from './hooks/useWorkout';
-export * from './hooks/useProgression';
 export * from './hooks/useSchedule';
-export * from './hooks/useWeeklyStats';

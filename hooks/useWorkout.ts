@@ -9,16 +9,9 @@ import { getTargets } from '@/lib/progression';
 import { useDevTools, useDevToolsRegisterWorkout } from '@/lib/devtools';
 import { getWorkoutType } from '@/lib/schedule';
 import {
-  unlockAudio,
-  playStart,
-  playSetLogged,
-  playCountdownTick,
-  playRestComplete,
-  playNextExercise,
-  playSkip,
-  playSessionComplete,
-  playExerciseReady,
-  playUndo,
+  unlockAudio, playStart, playSetLogged, playCountdownTick,
+  playRestComplete, playNextExercise, playSkip, playSessionComplete,
+  playExerciseReady, playUndo,
 } from '@/lib/audio';
 
 export function useWorkout(date: Date) {
@@ -31,63 +24,42 @@ export function useWorkout(date: Date) {
   const [flashColor, setFlashColor] = useState<'green' | 'red' | null>(null);
   const [nextExerciseName, setNextExerciseName] = useState('');
   const [timerPaused, setTimerPaused] = useState(false);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const countdownPlayedRef = useRef<Set<number>>(new Set());
+  const sessionRepsRef = useRef<Record<string, number[]>>({});
 
   const devtools = useDevTools();
-
   const dateKey = formatDateKey(date);
   const firstSession = getFirstSessionDate();
   const weekNumber = getWeekNumber(firstSession, date);
   const setsPerExercise = getSetsForWeek(weekNumber);
   const workoutType = getWorkoutType(date);
 
-  // Get exercises for current workout type
-  const EXERCISES = useMemo<Exercise[]>(() => {
+  const exercises = useMemo<Exercise[]>(() => {
     if (workoutType === 'push') return PUSH_EXERCISES;
     if (workoutType === 'pull') return PULL_EXERCISES;
     if (workoutType === 'legs') return LEGS_EXERCISES;
-    return []; // rest day
+    return [];
   }, [workoutType]);
 
-  const currentExercise = EXERCISES[exerciseIndex];
-
-  const targets = currentExercise
-    ? getTargets(currentExercise.key, weekNumber, date, data)
-    : [];
-
+  const currentExercise = exercises[exerciseIndex];
+  const targets = currentExercise ? getTargets(currentExercise.key, weekNumber, date, data) : [];
   const currentTarget = targets[currentSet] ?? targets[0] ?? 8;
 
-  // Get previous session reps for comparison
-  const getPreviousReps = useCallback(
-    (key: ExerciseKey, setIndex: number): number | null => {
-      const dates = Object.keys(data)
-        .filter((d) => d < dateKey && data[d].logged_at)
-        .sort()
-        .reverse();
-      if (dates.length === 0) return null;
-      const prevSession = data[dates[0]];
-      const reps = prevSession?.[key];
-      if (!reps || reps.length <= setIndex) return null;
-      return reps[setIndex];
-    },
-    [data, dateKey]
-  );
+  const previousRep = useMemo(() => {
+    if (!currentExercise) return null;
+    const prev = Object.keys(data).filter((d) => d < dateKey && data[d].logged_at).sort().reverse()[0];
+    if (!prev) return null;
+    const reps = data[prev]?.[currentExercise.key as ExerciseKey];
+    return reps && reps.length > currentSet ? reps[currentSet] : null;
+  }, [data, dateKey, currentExercise, currentSet]);
 
-  const previousRep = currentExercise
-    ? getPreviousReps(currentExercise.key, currentSet)
-    : null;
-
-  // Wake Lock
   const requestWakeLock = useCallback(async () => {
     try {
-      if ('wakeLock' in navigator) {
-        wakeLockRef.current = await navigator.wakeLock.request('screen');
-      }
-    } catch {
-      // Wake Lock not supported or denied
-    }
+      if ('wakeLock' in navigator) wakeLockRef.current = await navigator.wakeLock.request('screen');
+    } catch {}
   }, []);
 
   const releaseWakeLock = useCallback(() => {
@@ -95,30 +67,20 @@ export function useWorkout(date: Date) {
     wakeLockRef.current = null;
   }, []);
 
-  // Reset pause when leaving rest state
-  useEffect(() => {
-    if (state !== 'resting') setTimerPaused(false);
-  }, [state]);
+  useEffect(() => { if (state !== 'resting') setTimerPaused(false); }, [state]);
 
-  // Timer logic
   useEffect(() => {
     if (state === 'resting' && timer > 0 && !timerPaused) {
-      // Reset countdown tracking when timer starts fresh
-      if (timer === REST_DURATION) {
-        countdownPlayedRef.current = new Set();
-      }
-
+      if (timer === REST_DURATION) countdownPlayedRef.current = new Set();
       timerRef.current = setInterval(() => {
         setTimer((t) => {
           if (t <= 1) {
-            // Timer done
             clearInterval(timerRef.current!);
             timerRef.current = null;
             playRestComplete();
             advanceAfterRest();
             return 0;
           }
-          // Countdown ticks at 3, 2, 1
           if (t - 1 <= 3 && t - 1 > 0 && !countdownPlayedRef.current.has(t - 1)) {
             countdownPlayedRef.current.add(t - 1);
             playCountdownTick(t - 1);
@@ -126,51 +88,20 @@ export function useWorkout(date: Date) {
           return t - 1;
         });
       }, 1000 / (devtools?.timerSpeed ?? 1));
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-      };
+      return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, timer === REST_DURATION, devtools?.timerSpeed, timerPaused]);
 
-  const advanceAfterRest = useCallback(() => {
-    const nextSet = currentSet + 1;
-    if (nextSet < setsPerExercise) {
-      setCurrentSet(nextSet);
-      setState('exercising');
-    } else {
-      // Next exercise
-      const nextExercise = exerciseIndex + 1;
-      if (nextExercise < EXERCISES.length) {
-        // Show transition interstitial
-        playNextExercise();
-        setNextExerciseName(EXERCISES[nextExercise].name);
-        setExerciseIndex(nextExercise);
-        setCurrentSet(0);
-        setState('transitioning');
-      } else {
-        // Session complete
-        completeSession();
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSet, setsPerExercise, exerciseIndex]);
-
-  const finishTransition = useCallback(() => {
-    playExerciseReady();
-    setState('exercising');
-  }, []);
-
   const completeSession = useCallback(() => {
+    const reps = sessionRepsRef.current;
     const session: WorkoutData[string] = {
       logged_at: new Date().toISOString(),
       week_number: weekNumber,
-      workout_type: workoutType === 'rest' ? 'push' : workoutType, // fallback, should never be rest
+      workout_type: workoutType === 'rest' ? 'push' : workoutType,
     };
-    for (const ex of EXERCISES) {
-      if (sessionReps[ex.key]) {
-        (session as Record<string, unknown>)[ex.key] = sessionReps[ex.key];
-      }
+    for (const ex of exercises) {
+      if (reps[ex.key]) (session as Record<string, unknown>)[ex.key] = reps[ex.key];
     }
     saveSession(dateKey, session);
     setFirstSessionDate(dateKey);
@@ -178,11 +109,37 @@ export function useWorkout(date: Date) {
     playSessionComplete();
     setState('complete');
     releaseWakeLock();
-  }, [dateKey, weekNumber, sessionReps, releaseWakeLock, EXERCISES, workoutType]);
+  }, [dateKey, weekNumber, exercises, workoutType, releaseWakeLock]);
+
+  const advanceAfterRest = useCallback(() => {
+    const nextSet = currentSet + 1;
+    if (nextSet < setsPerExercise) {
+      setCurrentSet(nextSet);
+      setState('exercising');
+    } else {
+      const nextIdx = exerciseIndex + 1;
+      if (nextIdx < exercises.length) {
+        playNextExercise();
+        setNextExerciseName(exercises[nextIdx].name);
+        setExerciseIndex(nextIdx);
+        setCurrentSet(0);
+        setState('transitioning');
+      } else {
+        completeSession();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSet, setsPerExercise, exerciseIndex, exercises, completeSession]);
+
+  const finishTransition = useCallback(() => {
+    playExerciseReady();
+    setState('exercising');
+  }, []);
 
   const startWorkout = useCallback(() => {
     unlockAudio();
     playStart();
+    sessionRepsRef.current = {};
     setExerciseIndex(0);
     setCurrentSet(0);
     setSessionReps({});
@@ -190,91 +147,40 @@ export function useWorkout(date: Date) {
     requestWakeLock();
   }, [requestWakeLock]);
 
-  const logSet = useCallback(
-    (value: number) => {
-      if (!currentExercise) return;
-      const key = currentExercise.key;
+  const logSet = useCallback((value: number) => {
+    if (!currentExercise) return;
+    const key = currentExercise.key;
+    const hitTarget = value >= currentTarget;
+    setFlashColor(hitTarget ? 'green' : 'red');
+    playSetLogged(hitTarget);
+    setTimeout(() => setFlashColor(null), 600);
 
-      // Flash feedback
-      const target = currentTarget;
-      const hitTarget = value >= target;
-      setFlashColor(hitTarget ? 'green' : 'red');
-      playSetLogged(hitTarget);
-      setTimeout(() => setFlashColor(null), 600);
+    const newReps = { ...sessionRepsRef.current, [key]: [...(sessionRepsRef.current[key] || []), value] };
+    sessionRepsRef.current = newReps;
+    setSessionReps(newReps);
 
-      setSessionReps((prev) => ({
-        ...prev,
-        [key]: [...(prev[key] || []), value],
-      }));
+    const isLastSet = currentSet + 1 >= setsPerExercise;
+    const isLastExercise = exerciseIndex + 1 >= exercises.length;
 
-      // Start rest timer (unless last set of last exercise)
-      const isLastSet = currentSet + 1 >= setsPerExercise;
-      const isLastExercise = exerciseIndex + 1 >= EXERCISES.length;
-
+    setTimeout(() => {
       if (isLastSet && isLastExercise) {
-        // Complete after brief delay for flash
-        setTimeout(() => {
-          // Need to manually build session since state hasn't updated yet
-          const finalReps = {
-            ...sessionReps,
-            [key]: [...(sessionReps[key] || []), value],
-          };
-          const session: WorkoutData[string] = {
-            logged_at: new Date().toISOString(),
-            week_number: weekNumber,
-            workout_type: workoutType === 'rest' ? 'push' : workoutType,
-          };
-          for (const ex of EXERCISES) {
-            if (finalReps[ex.key]) {
-              (session as Record<string, unknown>)[ex.key] = finalReps[ex.key];
-            }
-          }
-          saveSession(dateKey, session);
-          setFirstSessionDate(dateKey);
-          setData(loadWorkoutData());
-          playSessionComplete();
-          setState('complete');
-          releaseWakeLock();
-        }, 700);
+        completeSession();
       } else {
-        setTimeout(() => {
-          setTimer(REST_DURATION);
-          setState('resting');
-        }, 700);
+        setTimer(REST_DURATION);
+        setState('resting');
       }
-    },
-    [
-      currentExercise,
-      currentSet,
-      setsPerExercise,
-      exerciseIndex,
-      currentTarget,
-      sessionReps,
-      dateKey,
-      weekNumber,
-      releaseWakeLock,
-    ]
-  );
+    }, 700);
+  }, [currentExercise, currentSet, setsPerExercise, exerciseIndex, exercises, currentTarget, completeSession]);
 
   const skipTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    // Only play skip when staying on the same exercise (next set).
-    // When advancing to next exercise, advanceAfterRest plays playNextExercise instead.
-    const movingToNextExercise = currentSet + 1 >= setsPerExercise;
-    if (!movingToNextExercise) {
-      playSkip();
-    }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (currentSet + 1 < setsPerExercise) playSkip();
     advanceAfterRest();
   }, [advanceAfterRest, currentSet, setsPerExercise]);
 
   const quitWorkout = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    sessionRepsRef.current = {};
     setState('idle');
     setExerciseIndex(0);
     setCurrentSet(0);
@@ -282,96 +188,42 @@ export function useWorkout(date: Date) {
     releaseWakeLock();
   }, [releaseWakeLock]);
 
-  // Browser back button support — push history entries on state changes
-  // so the back gesture goes back through workout states instead of leaving the app
+  // Browser back button
   useEffect(() => {
-    if (state !== 'idle') {
-      window.history.pushState({ workoutState: state }, '');
-    }
+    if (state !== 'idle') window.history.pushState({ workoutState: state }, '');
   }, [state]);
 
   useEffect(() => {
-    const handlePopState = () => {
-      if (state === 'complete') {
-        // From complete screen, just go back to idle
-        setState('idle');
-      } else if (state !== 'idle') {
-        // Mid-workout: quit (clears timer, resets state)
-        quitWorkout();
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    const handler = () => { if (state !== 'idle') quitWorkout(); };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
   }, [state, quitWorkout]);
 
-  const togglePauseTimer = useCallback(() => {
-    setTimerPaused((prev) => !prev);
-  }, []);
+  const togglePauseTimer = useCallback(() => setTimerPaused((p) => !p), []);
 
   const undoLastSet = useCallback(() => {
     if (!currentExercise) return;
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setSessionReps((prev) => {
-      const key = currentExercise.key;
-      const current = prev[key] || [];
-      if (current.length === 0) return prev;
-      return { ...prev, [key]: current.slice(0, -1) };
-    });
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    const key = currentExercise.key;
+    const updated = { ...sessionRepsRef.current, [key]: (sessionRepsRef.current[key] || []).slice(0, -1) };
+    sessionRepsRef.current = updated;
+    setSessionReps(updated);
     playUndo();
     setTimer(REST_DURATION);
     setState('exercising');
   }, [currentExercise]);
 
-  const refreshData = useCallback(() => {
-    setData(loadWorkoutData());
-  }, []);
+  const refreshData = useCallback(() => setData(loadWorkoutData()), []);
 
-  // Register state into DevTools context (writes to ref, no re-render)
   useDevToolsRegisterWorkout({
-    state,
-    exerciseIndex,
-    currentSet,
-    setsPerExercise,
-    timer,
-    currentTarget,
-    sessionReps,
-    weekNumber,
-    currentExerciseName: currentExercise?.name ?? '',
-    setState,
-    setExerciseIndex,
-    setCurrentSet,
-    setTimer,
-    logSet,
-    skipTimer,
-    startWorkout,
-    quitWorkout,
+    state, exerciseIndex, currentSet, setsPerExercise, timer, currentTarget, sessionReps,
+    weekNumber, currentExerciseName: currentExercise?.name ?? '',
+    setState, setExerciseIndex, setCurrentSet, setTimer, logSet, skipTimer, startWorkout, quitWorkout,
   });
 
   return {
-    state,
-    exerciseIndex,
-    currentSet,
-    setsPerExercise,
-    timer,
-    currentExercise,
-    currentTarget,
-    previousRep,
-    flashColor,
-    sessionReps,
-    weekNumber,
-    data,
-    nextExerciseName,
-    startWorkout,
-    logSet,
-    skipTimer,
-    quitWorkout,
-    refreshData,
-    finishTransition,
-    togglePauseTimer,
-    undoLastSet,
-    timerPaused,
+    state, exerciseIndex, currentSet, setsPerExercise, timer, currentExercise, currentTarget,
+    previousRep, flashColor, sessionReps, weekNumber, data, nextExerciseName, timerPaused,
+    startWorkout, logSet, skipTimer, quitWorkout, refreshData, finishTransition, togglePauseTimer, undoLastSet,
   };
 }

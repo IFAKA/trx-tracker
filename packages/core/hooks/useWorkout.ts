@@ -1,18 +1,3 @@
-/**
- * Platform-agnostic workout state machine
- *
- * Removed platform-specific code:
- * - navigator.wakeLock (browser-only)
- * - window.history (browser-only)
- * - Direct localStorage calls (replaced with StorageAdapter)
- *
- * Platform implementations should provide:
- * - storageAdapter: Platform-specific storage implementation
- * - audioCallbacks: Optional sound playback functions
- * - onWakeLockRequest/Release: Optional wake lock handlers
- * - onHistoryPush: Optional browser history handler
- */
-
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { WorkoutState, WorkoutData, ExerciseKey, Exercise } from '../lib/types';
 import { PUSH_EXERCISES, PULL_EXERCISES, LEGS_EXERCISES, REST_DURATION } from '../lib/constants';
@@ -21,18 +6,9 @@ import { getTargets } from '../lib/progression';
 import { getWorkoutType } from '../lib/schedule';
 import type { StorageAdapter } from '../lib/storage-interface';
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 export interface UseWorkoutOptions {
-  /** Current date for workout session */
   date: Date;
-
-  /** Platform-specific storage adapter */
   storageAdapter: StorageAdapter;
-
-  /** Optional audio callbacks */
   audioCallbacks?: {
     unlockAudio?: () => void;
     playStart?: () => void;
@@ -45,23 +21,16 @@ export interface UseWorkoutOptions {
     playExerciseReady?: () => void;
     playUndo?: () => void;
   };
-
-  /** Optional wake lock handlers (browser/mobile) */
   onWakeLockRequest?: () => Promise<void>;
   onWakeLockRelease?: () => void;
-
-  /** Optional browser history handler (PWA only) */
   onHistoryPush?: (state: WorkoutState) => void;
-
-  /** Optional DevTools integration */
   devTools?: {
-    timerSpeed?: number; // Speed multiplier for testing
+    timerSpeed?: number;
     registerState?: (state: unknown) => void;
   };
 }
 
 export interface UseWorkoutReturn {
-  // State
   state: WorkoutState;
   exerciseIndex: number;
   currentSet: number;
@@ -75,8 +44,7 @@ export interface UseWorkoutReturn {
   weekNumber: number;
   data: WorkoutData;
   nextExerciseName: string;
-
-  // Actions
+  timerPaused: boolean;
   startWorkout: () => void;
   logSet: (value: number) => void;
   skipTimer: () => void;
@@ -85,25 +53,11 @@ export interface UseWorkoutReturn {
   finishTransition: () => void;
   togglePauseTimer: () => void;
   undoLastSet: () => void;
-  timerPaused: boolean;
 }
 
-// ============================================================================
-// HOOK
-// ============================================================================
-
 export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
-  const {
-    date,
-    storageAdapter,
-    audioCallbacks = {},
-    onWakeLockRequest,
-    onWakeLockRelease,
-    onHistoryPush,
-    devTools,
-  } = options;
+  const { date, storageAdapter, audioCallbacks = {}, onWakeLockRequest, onWakeLockRelease, onHistoryPush, devTools } = options;
 
-  // State
   const [state, setState] = useState<WorkoutState>('idle');
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [currentSet, setCurrentSet] = useState(0);
@@ -117,23 +71,17 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownPlayedRef = useRef<Set<number>>(new Set());
+  // Ref mirrors sessionReps so completeSession always reads the latest value
+  const sessionRepsRef = useRef<Record<string, number[]>>({});
 
-  // Load data on mount
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      const [loadedData, firstDate] = await Promise.all([
-        storageAdapter.loadWorkoutData(),
-        storageAdapter.getFirstSessionDate(),
-      ]);
-      if (mounted) {
-        setData(loadedData);
-        setFirstSessionDate(firstDate);
+    Promise.all([storageAdapter.loadWorkoutData(), storageAdapter.getFirstSessionDate()]).then(
+      ([loadedData, firstDate]) => {
+        if (mounted) { setData(loadedData); setFirstSessionDate(firstDate); }
       }
-    })();
-    return () => {
-      mounted = false;
-    };
+    );
+    return () => { mounted = false; };
   }, [storageAdapter]);
 
   const dateKey = formatDateKey(date);
@@ -142,66 +90,36 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
 
   const { workoutType, exercises } = useMemo(() => {
     const wt = getWorkoutType(date);
-    let exs: Exercise[];
-    if (wt === 'push') exs = PUSH_EXERCISES;
-    else if (wt === 'pull') exs = PULL_EXERCISES;
-    else if (wt === 'legs') exs = LEGS_EXERCISES;
-    else exs = PUSH_EXERCISES; // rest day fallback (shouldn't start workout on rest day)
+    const exs = wt === 'push' ? PUSH_EXERCISES : wt === 'pull' ? PULL_EXERCISES : wt === 'legs' ? LEGS_EXERCISES : PUSH_EXERCISES;
     return { workoutType: wt, exercises: exs };
   }, [date]);
 
   const currentExercise = exercises[exerciseIndex];
-
-  const targets = currentExercise
-    ? getTargets(currentExercise.key, weekNumber, date, data)
-    : [];
-
+  const targets = currentExercise ? getTargets(currentExercise.key, weekNumber, date, data) : [];
   const currentTarget = targets[currentSet] ?? targets[0] ?? 10;
 
-  // Get previous session reps for comparison
-  const getPreviousReps = useCallback(
-    (key: ExerciseKey, setIndex: number): number | null => {
-      const dates = Object.keys(data)
-        .filter((d) => d < dateKey && data[d].logged_at)
-        .sort()
-        .reverse();
-      if (dates.length === 0) return null;
-      const prevSession = data[dates[0]];
-      const reps = prevSession?.[key];
-      if (!reps || reps.length <= setIndex) return null;
-      return reps[setIndex];
-    },
-    [data, dateKey]
-  );
+  const previousRep = useMemo(() => {
+    if (!currentExercise) return null;
+    const prev = Object.keys(data).filter((d) => d < dateKey && data[d].logged_at).sort().reverse()[0];
+    if (!prev) return null;
+    const reps = data[prev]?.[currentExercise.key as ExerciseKey];
+    return reps && reps.length > currentSet ? reps[currentSet] : null;
+  }, [data, dateKey, currentExercise, currentSet]);
 
-  const previousRep = currentExercise
-    ? getPreviousReps(currentExercise.key, currentSet)
-    : null;
+  useEffect(() => { if (state !== 'resting') setTimerPaused(false); }, [state]);
 
-  // Reset pause when leaving rest state
-  useEffect(() => {
-    if (state !== 'resting') setTimerPaused(false);
-  }, [state]);
-
-  // Timer logic
   useEffect(() => {
     if (state === 'resting' && timer > 0 && !timerPaused) {
-      // Reset countdown tracking when timer starts fresh
-      if (timer === REST_DURATION) {
-        countdownPlayedRef.current = new Set();
-      }
-
+      if (timer === REST_DURATION) countdownPlayedRef.current = new Set();
       timerRef.current = setInterval(() => {
         setTimer((t) => {
           if (t <= 1) {
-            // Timer done
             clearInterval(timerRef.current!);
             timerRef.current = null;
             audioCallbacks.playRestComplete?.();
             advanceAfterRest();
             return 0;
           }
-          // Countdown ticks at 3, 2, 1
           if (t - 1 <= 3 && t - 1 > 0 && !countdownPlayedRef.current.has(t - 1)) {
             countdownPlayedRef.current.add(t - 1);
             audioCallbacks.playCountdownTick?.(t - 1);
@@ -209,13 +127,28 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
           return t - 1;
         });
       }, 1000 / (devTools?.timerSpeed ?? 1));
-
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-      };
+      return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, timer === REST_DURATION, devTools?.timerSpeed, timerPaused]);
+
+  const saveAndComplete = useCallback(async () => {
+    const reps = sessionRepsRef.current;
+    const session: WorkoutData[string] = {
+      logged_at: new Date().toISOString(),
+      week_number: weekNumber,
+      workout_type: workoutType as Exclude<typeof workoutType, 'rest'>,
+    };
+    for (const ex of exercises) {
+      if (reps[ex.key]) (session as Record<string, unknown>)[ex.key] = reps[ex.key];
+    }
+    await storageAdapter.saveSession(dateKey, session);
+    await storageAdapter.setFirstSessionDate(dateKey);
+    setData(await storageAdapter.loadWorkoutData());
+    audioCallbacks.playSessionComplete?.();
+    setState('complete');
+    onWakeLockRelease?.();
+  }, [dateKey, weekNumber, exercises, workoutType, storageAdapter, audioCallbacks, onWakeLockRelease]);
 
   const advanceAfterRest = useCallback(() => {
     const nextSet = currentSet + 1;
@@ -223,54 +156,29 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
       setCurrentSet(nextSet);
       setState('exercising');
     } else {
-      // Next exercise
-      const nextExercise = exerciseIndex + 1;
-      if (nextExercise < exercises.length) {
-        // Show transition interstitial
+      const nextIdx = exerciseIndex + 1;
+      if (nextIdx < exercises.length) {
         audioCallbacks.playNextExercise?.();
-        setNextExerciseName(exercises[nextExercise].name);
-        setExerciseIndex(nextExercise);
+        setNextExerciseName(exercises[nextIdx].name);
+        setExerciseIndex(nextIdx);
         setCurrentSet(0);
         setState('transitioning');
       } else {
-        // Session complete
-        completeSession();
+        saveAndComplete();
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSet, setsPerExercise, exerciseIndex, exercises]);
+  }, [currentSet, setsPerExercise, exerciseIndex, exercises, saveAndComplete]);
 
   const finishTransition = useCallback(() => {
     audioCallbacks.playExerciseReady?.();
     setState('exercising');
   }, [audioCallbacks]);
 
-  const completeSession = useCallback(() => {
-    (async () => {
-      const session: WorkoutData[string] = {
-        logged_at: new Date().toISOString(),
-        week_number: weekNumber,
-        workout_type: workoutType as Exclude<typeof workoutType, 'rest'>,
-      };
-      for (const ex of exercises) {
-        if (sessionReps[ex.key]) {
-          (session as Record<string, unknown>)[ex.key] = sessionReps[ex.key];
-        }
-      }
-      await storageAdapter.saveSession(dateKey, session);
-      await storageAdapter.setFirstSessionDate(dateKey);
-
-      const updatedData = await storageAdapter.loadWorkoutData();
-      setData(updatedData);
-      audioCallbacks.playSessionComplete?.();
-      setState('complete');
-      onWakeLockRelease?.();
-    })();
-  }, [dateKey, weekNumber, sessionReps, storageAdapter, audioCallbacks, onWakeLockRelease, exercises, workoutType]);
-
   const startWorkout = useCallback(() => {
     audioCallbacks.unlockAudio?.();
     audioCallbacks.playStart?.();
+    sessionRepsRef.current = {};
     setExerciseIndex(0);
     setCurrentSet(0);
     setSessionReps({});
@@ -278,99 +186,40 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
     onWakeLockRequest?.();
   }, [audioCallbacks, onWakeLockRequest]);
 
-  const logSet = useCallback(
-    (value: number) => {
-      if (!currentExercise) return;
-      const key = currentExercise.key;
+  const logSet = useCallback((value: number) => {
+    if (!currentExercise) return;
+    const key = currentExercise.key;
+    const hitTarget = value >= currentTarget;
+    setFlashColor(hitTarget ? 'green' : 'red');
+    audioCallbacks.playSetLogged?.(hitTarget);
+    setTimeout(() => setFlashColor(null), 600);
 
-      // Flash feedback
-      const target = currentTarget;
-      const hitTarget = value >= target;
-      setFlashColor(hitTarget ? 'green' : 'red');
-      audioCallbacks.playSetLogged?.(hitTarget);
-      setTimeout(() => setFlashColor(null), 600);
+    const newReps = { ...sessionRepsRef.current, [key]: [...(sessionRepsRef.current[key] || []), value] };
+    sessionRepsRef.current = newReps;
+    setSessionReps(newReps);
 
-      setSessionReps((prev) => ({
-        ...prev,
-        [key]: [...(prev[key] || []), value],
-      }));
+    const isLastSet = currentSet + 1 >= setsPerExercise;
+    const isLastExercise = exerciseIndex + 1 >= exercises.length;
 
-      // Start rest timer (unless last set of last exercise)
-      const isLastSet = currentSet + 1 >= setsPerExercise;
-      const isLastExercise = exerciseIndex + 1 >= exercises.length;
-
+    setTimeout(() => {
       if (isLastSet && isLastExercise) {
-        // Complete after brief delay for flash
-        setTimeout(() => {
-          // Build final session
-          const finalReps = {
-            ...sessionReps,
-            [key]: [...(sessionReps[key] || []), value],
-          };
-          (async () => {
-            const session: WorkoutData[string] = {
-              logged_at: new Date().toISOString(),
-              week_number: weekNumber,
-              workout_type: workoutType as Exclude<typeof workoutType, 'rest'>,
-            };
-            for (const ex of exercises) {
-              if (finalReps[ex.key]) {
-                (session as Record<string, unknown>)[ex.key] = finalReps[ex.key];
-              }
-            }
-            await storageAdapter.saveSession(dateKey, session);
-            await storageAdapter.setFirstSessionDate(dateKey);
-
-            const updatedData = await storageAdapter.loadWorkoutData();
-            setData(updatedData);
-            audioCallbacks.playSessionComplete?.();
-            setState('complete');
-            onWakeLockRelease?.();
-          })();
-        }, 700);
+        saveAndComplete();
       } else {
-        setTimeout(() => {
-          setTimer(REST_DURATION);
-          setState('resting');
-        }, 700);
+        setTimer(REST_DURATION);
+        setState('resting');
       }
-    },
-    [
-      currentExercise,
-      currentSet,
-      setsPerExercise,
-      exerciseIndex,
-      currentTarget,
-      sessionReps,
-      dateKey,
-      weekNumber,
-      storageAdapter,
-      audioCallbacks,
-      onWakeLockRelease,
-      exercises,
-      workoutType,
-    ]
-  );
+    }, 700);
+  }, [currentExercise, currentSet, setsPerExercise, exerciseIndex, exercises, currentTarget, audioCallbacks, saveAndComplete]);
 
   const skipTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    // Only play skip when staying on the same exercise (next set).
-    // When advancing to next exercise, advanceAfterRest plays playNextExercise instead.
-    const movingToNextExercise = currentSet + 1 >= setsPerExercise;
-    if (!movingToNextExercise) {
-      audioCallbacks.playSkip?.();
-    }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (currentSet + 1 < setsPerExercise) audioCallbacks.playSkip?.();
     advanceAfterRest();
   }, [advanceAfterRest, audioCallbacks, currentSet, setsPerExercise]);
 
   const quitWorkout = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    sessionRepsRef.current = {};
     setState('idle');
     setExerciseIndex(0);
     setCurrentSet(0);
@@ -378,91 +227,35 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
     onWakeLockRelease?.();
   }, [onWakeLockRelease]);
 
-  const togglePauseTimer = useCallback(() => {
-    setTimerPaused((prev) => !prev);
-  }, []);
+  const togglePauseTimer = useCallback(() => setTimerPaused((p) => !p), []);
 
   const undoLastSet = useCallback(() => {
     if (!currentExercise) return;
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setSessionReps((prev) => {
-      const key = currentExercise.key;
-      const current = prev[key] || [];
-      if (current.length === 0) return prev;
-      return { ...prev, [key]: current.slice(0, -1) };
-    });
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    const key = currentExercise.key;
+    const updated = { ...sessionRepsRef.current, [key]: (sessionRepsRef.current[key] || []).slice(0, -1) };
+    sessionRepsRef.current = updated;
+    setSessionReps(updated);
     audioCallbacks.playUndo?.();
     setTimer(REST_DURATION);
     setState('exercising');
   }, [currentExercise, audioCallbacks]);
 
   const refreshData = useCallback(() => {
-    (async () => {
-      const updatedData = await storageAdapter.loadWorkoutData();
-      setData(updatedData);
-    })();
+    storageAdapter.loadWorkoutData().then(setData);
   }, [storageAdapter]);
 
-  // Platform-specific: Browser history support (optional)
   useEffect(() => {
-    if (state !== 'idle' && onHistoryPush) {
-      onHistoryPush(state);
-    }
+    if (state !== 'idle' && onHistoryPush) onHistoryPush(state);
   }, [state, onHistoryPush]);
 
-  // DevTools integration (optional)
   useEffect(() => {
-    if (devTools?.registerState) {
-      devTools.registerState({
-        state,
-        exerciseIndex,
-        currentSet,
-        setsPerExercise,
-        timer,
-        currentTarget,
-        sessionReps,
-        weekNumber,
-        currentExerciseName: currentExercise?.name ?? '',
-      });
-    }
-  }, [
-    state,
-    exerciseIndex,
-    currentSet,
-    setsPerExercise,
-    timer,
-    currentTarget,
-    sessionReps,
-    weekNumber,
-    currentExercise,
-    devTools,
-  ]);
+    devTools?.registerState?.({ state, exerciseIndex, currentSet, setsPerExercise, timer, currentTarget, sessionReps, weekNumber, currentExerciseName: currentExercise?.name ?? '' });
+  }, [state, exerciseIndex, currentSet, setsPerExercise, timer, currentTarget, sessionReps, weekNumber, currentExercise, devTools]);
 
   return {
-    state,
-    exerciseIndex,
-    currentSet,
-    setsPerExercise,
-    timer,
-    currentExercise,
-    currentTarget,
-    previousRep,
-    flashColor,
-    sessionReps,
-    weekNumber,
-    data,
-    nextExerciseName,
-    startWorkout,
-    logSet,
-    skipTimer,
-    quitWorkout,
-    refreshData,
-    finishTransition,
-    togglePauseTimer,
-    undoLastSet,
-    timerPaused,
+    state, exerciseIndex, currentSet, setsPerExercise, timer, currentExercise, currentTarget,
+    previousRep, flashColor, sessionReps, weekNumber, data, nextExerciseName, timerPaused,
+    startWorkout, logSet, skipTimer, quitWorkout, refreshData, finishTransition, togglePauseTimer, undoLastSet,
   };
 }

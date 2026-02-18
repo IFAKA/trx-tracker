@@ -17,8 +17,7 @@ export function getWeekNumber(firstSessionDate: string | null, currentDate: Date
 }
 
 export function getSetsForWeek(weekNumber: number): number {
-  // Week 1-2: 3 sets, Week 3+: 4 sets
-  return weekNumber <= 2 ? 3 : 4;
+  return weekNumber <= 4 ? 2 : 3;
 }
 
 export function getPreviousSessionDate(
@@ -88,7 +87,3 @@ export function getWeeklyStats(
   };
 }
 
-export function getTrainingDaysThisWeek(): number {
-  // 6 training days per week (all days except 1 rest day)
-  return 6;
-}

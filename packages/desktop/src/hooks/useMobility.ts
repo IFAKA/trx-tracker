@@ -1,29 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MOBILITY_EXERCISES, MOBILITY_DONE_KEY } from '../lib/constants';
+import { MOBILITY_EXERCISES } from '../lib/constants';
 import { formatDateKey } from '../lib/workout-utils';
 import { unlockAudio, playStart, playCountdownTick, playNextExercise, playSkip, playMobilityComplete } from '../lib/audio';
 
-async function isMobilityDoneToday(): Promise<boolean> {
-  try {
-    const storage = await import('../lib/storage-tauri');
-    const dateKey = formatDateKey(new Date());
-    return await storage.getStorage().getMobilityDone(dateKey);
-  } catch {
-    return false;
-  }
-}
+import { tauriStorage } from '../lib/storage-tauri';
 
-async function saveMobilityDone(): Promise<void> {
-  try {
-    const storage = await import('../lib/storage-tauri');
-    const dateKey = formatDateKey(new Date());
-    await storage.getStorage().setMobilityDone(dateKey);
-  } catch {
-    // ignore
-  }
-}
+const isMobilityDoneToday = () =>
+  tauriStorage.getMobilityDone(formatDateKey(new Date())).catch(() => false);
+
+const saveMobilityDone = () =>
+  tauriStorage.setMobilityDone(formatDateKey(new Date())).catch(() => {});
 
 export function useMobility() {
   const [exerciseIndex, setExerciseIndex] = useState(0);
@@ -102,17 +90,6 @@ export function useMobility() {
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isActive, isPaused, timer, exercise, exerciseIndex, side]);
-
-  const quit = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    setIsActive(false);
-    setExerciseIndex(0);
-    setTimer(0);
-    setSide(null);
-  }, []);
 
   const skip = useCallback(() => {
     playSkip();
