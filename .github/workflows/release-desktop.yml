@@ -51,6 +51,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Resolve release version
+        if: steps.semantic.outputs.new_release_published == 'true' || github.event_name == 'workflow_dispatch'
+        id: version
+        run: |
+          if [ -n "${{ steps.semantic.outputs.new_release_version }}" ]; then
+            echo "tag=v${{ steps.semantic.outputs.new_release_version }}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(node -p "require('./packages/desktop/src-tauri/tauri.conf.json').version")
+            echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build Tauri app
         if: steps.semantic.outputs.new_release_published == 'true' || github.event_name == 'workflow_dispatch'
         run: |
@@ -61,7 +72,7 @@ jobs:
         if: steps.semantic.outputs.new_release_published == 'true' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.semantic.outputs.new_release_version }}
+          tag_name: ${{ steps.version.outputs.tag }}
           files: |
             packages/desktop/src-tauri/target/release/bundle/dmg/*.dmg
             packages/desktop/src-tauri/target/release/bundle/macos/*.app.tar.gz
