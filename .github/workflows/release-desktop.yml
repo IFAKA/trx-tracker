@@ -97,6 +97,9 @@ jobs:
           cp -R "$APP" pkg-root/Applications/
           cp packages/desktop/pkg/com.traindaily.desktop.plist pkg-root/Library/LaunchAgents/
 
+          # Ad-hoc sign so macOS 26 Gatekeeper doesn't remove the app after install
+          codesign --deep --force --sign - pkg-root/Applications/TrainDaily.app
+
           # Build the installer
           pkgbuild \
             --root pkg-root \
