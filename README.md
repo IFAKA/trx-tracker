@@ -7,17 +7,9 @@ A no-excuses workout tracker with native desktop app (macOS) and mobile PWA that
 ## For Users
 
 **Desktop App (macOS)**
-1. Download the latest `.dmg` from [Releases](https://github.com/IFAKA/traindaily/releases)
-2. Open the `.dmg` and drag TrainDaily to Applications folder
-3. **First launch:** Right-click TrainDaily.app → Open → Confirm
-   *(macOS Gatekeeper will show a warning since the app isn't from the App Store)*
-4. **If you see "damaged and can't be opened":** Run this once in Terminal, then open normally:
-   ```bash
-   xattr -cr /Applications/TrainDaily.app
-   ```
-5. Grant microphone permission when prompted
-   *(Used to detect calls and skip hourly breaks automatically)*
-6. The app will guide you through onboarding
+1. Download the latest `.pkg` from [Releases](https://github.com/IFAKA/traindaily/releases)
+2. Double-click the `.pkg` → macOS installer wizard → enter your password
+3. Done — TrainDaily is installed and will open automatically on login for all users
 
 **Mobile PWA**
 Visit [traindaily.vercel.app](https://traindaily.vercel.app) → Add to home screen for native-like experience.
@@ -67,11 +59,11 @@ cd packages/desktop
 pnpm tauri dev  # Launches desktop app + creates SQLite DB at /Users/Shared/TrainDaily/
 ```
 
-**Build Production DMG**
+**Build Production PKG**
 ```bash
 cd packages/desktop
 pnpm tauri build
-# Output: src-tauri/target/release/bundle/dmg/TrainDaily_*.dmg
+# .pkg is built automatically by CI — see .github/workflows/release-desktop.yml
 ```
 
 **PWA Development**
@@ -193,14 +185,14 @@ traindaily/
 **Automated releases via semantic-release:**
 - Every `feat:` commit → new MINOR version (0.1.0 → 0.2.0)
 - Every `fix:` commit → new PATCH version (0.1.0 → 0.1.1)
-- GitHub Actions builds `.dmg` automatically
+- GitHub Actions builds `.pkg` automatically
 - See [`RELEASES.md`](RELEASES.md) for commit message format
 
 ```bash
 # Example: This commit will trigger v0.2.0 release
 git commit -m "feat: add workout history export"
 git push origin main
-# → Automated: .dmg built, GitHub release created
+# → Automated: .pkg built, GitHub release created
 ```
 
 ### Development Commands
@@ -212,7 +204,7 @@ pnpm install
 # Desktop app
 cd packages/desktop
 pnpm tauri dev            # Run in dev mode
-pnpm tauri build          # Build production .dmg
+pnpm tauri build          # Build production app (.pkg via CI)
 pnpm build                # Build frontend only
 
 # Core package (shared logic)
