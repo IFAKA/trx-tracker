@@ -8,8 +8,12 @@ A no-excuses workout tracker with native desktop app (macOS) and mobile PWA that
 
 **Desktop App (macOS)**
 1. Download the latest `.pkg` from [Releases](https://github.com/IFAKA/traindaily/releases)
-2. Double-click the `.pkg` → macOS installer wizard → enter your password
-3. Done — TrainDaily is installed and will open automatically on login for all users
+2. If macOS blocks the installer with "cannot be verified", run this first:
+   ```bash
+   xattr -rd com.apple.quarantine ~/Downloads/TrainDaily-*.pkg
+   ```
+3. Double-click the `.pkg` → macOS installer wizard → enter your password
+4. Done — TrainDaily is installed and will open automatically on login for all users
 
 **Mobile PWA**
 Visit [traindaily.vercel.app](https://traindaily.vercel.app) → Add to home screen for native-like experience.
@@ -19,6 +23,7 @@ Visit [traindaily.vercel.app](https://traindaily.vercel.app) → Add to home scr
 sudo rm -rf /Applications/TrainDaily.app
 sudo rm -f /Library/LaunchAgents/com.traindaily.desktop.plist
 rm -f ~/Library/LaunchAgents/com.traindaily.desktop.plist
+sudo rm -rf /Users/Shared/TrainDaily/   # Removes all workout data + logs
 ```
 
 ---
