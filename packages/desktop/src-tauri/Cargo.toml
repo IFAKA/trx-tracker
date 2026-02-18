@@ -1,6 +1,6 @@
 [package]
 name = "traindaily-desktop"
-version = "1.10.2"
+version = "1.10.3"
 description = "TrainDaily - Native macOS workout accountability app"
 authors = ["TrainDaily"]
 edition = "2021"
