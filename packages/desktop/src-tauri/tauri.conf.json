@@ -31,11 +31,7 @@
     }
   },
   "plugins": {
-    "autostart": {
-      "desktop": {
-        "args": false
-      }
-    }
+    "autostart": {}
   },
   "bundle": {
     "active": true,
