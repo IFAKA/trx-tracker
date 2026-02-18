@@ -166,46 +166,53 @@ function TodayContent({ date }: { date: Date }) {
       : LEGS_EXERCISES;
 
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-6">
-        <CheckCircle className="w-16 h-16 text-green-500" />
-        <h1 className="text-xl font-bold tracking-tight uppercase">{sessionWorkoutType} DONE</h1>
-        <p className="text-sm text-muted-foreground">{formatDisplayDate(date)}</p>
-
-        {/* Quick summary */}
-        <div className="w-full max-w-xs space-y-1">
-          <div className="flex items-center justify-between text-xs text-muted-foreground/60 uppercase tracking-widest mb-2">
+      <div className="flex flex-col h-screen overflow-hidden bg-background">
+        {/* Header */}
+        <div className="flex flex-col items-center flex-shrink-0 p-6 pt-12 gap-3">
+          <CheckCircle className="w-16 h-16 text-green-500" />
+          <h1 className="text-xl font-bold tracking-tight uppercase">{sessionWorkoutType} DONE</h1>
+          <p className="text-sm text-muted-foreground">{formatDisplayDate(date)}</p>
+          <div className="flex items-center justify-between text-xs text-muted-foreground/60 uppercase tracking-widest w-full max-w-xs mt-2">
             <span>Exercise</span>
             <span>Sets</span>
           </div>
-          {completedExercises.map((ex) => {
-            const reps = session?.[ex.key];
-            if (!reps) return null;
-            return (
-              <div key={ex.key} className="flex justify-between text-sm">
-                <span className="text-muted-foreground truncate font-[family-name:var(--font-geist-sans)]">{ex.name}</span>
-                <span className="font-mono">
-                  {reps.join('·')}
-                  {ex.unit === 'seconds' ? 's' : ''}
-                </span>
-              </div>
-            );
-          })}
         </div>
 
-        <div className="flex items-center gap-2 text-muted-foreground mt-4">
-          <Calendar className="w-4 h-4" />
-          <span className="text-sm font-mono">
-            {schedule.weekProgress.completed}/{schedule.weekProgress.total} this week
-          </span>
+        {/* Scrollable exercises list */}
+        <div className="flex-1 overflow-y-auto px-6">
+          <div className="w-full max-w-xs mx-auto space-y-1">
+            {completedExercises.map((ex) => {
+              const reps = session?.[ex.key];
+              if (!reps) return null;
+              return (
+                <div key={ex.key} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground truncate font-[family-name:var(--font-geist-sans)]">{ex.name}</span>
+                  <span className="font-mono">
+                    {reps.join('·')}
+                    {ex.unit === 'seconds' ? 's' : ''}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        <button
-          onClick={() => setShowHistory(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all"
-        >
-          <ChartBar className="w-4 h-4" />
-          <span className="text-sm">History</span>
-        </button>
+        {/* Bottom actions */}
+        <div className="flex-shrink-0 flex flex-col items-center gap-3 p-6">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Calendar className="w-4 h-4" />
+            <span className="text-sm font-mono">
+              {schedule.weekProgress.completed}/{schedule.weekProgress.total} this week
+            </span>
+          </div>
+          <button
+            onClick={() => setShowHistory(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all"
+          >
+            <ChartBar className="w-4 h-4" />
+            <span className="text-sm">History</span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -265,49 +272,54 @@ function TodayContent({ date }: { date: Date }) {
 
   // Idle — ready to start
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-6">
-      <div className="flex flex-col items-center gap-3">
-        <Dumbbell
-          className="w-10 h-10"
-          style={{ animation: 'bounce-in 600ms ease-out backwards' }}
-        />
-        <h1 className="text-2xl font-bold tracking-tight uppercase text-foreground">
-          {workoutType === 'push' ? 'PUSH' : workoutType === 'pull' ? 'PULL' : 'LEGS'}
-        </h1>
-        <p className="text-sm text-muted-foreground">{formatDisplayDate(date)}</p>
+    <div className="flex flex-col h-screen overflow-hidden bg-background">
+      {/* Top content */}
+      <div className="flex flex-col items-center flex-shrink-0 px-6 pt-12 pb-4 gap-5">
+        <div className="flex flex-col items-center gap-3">
+          <Dumbbell
+            className="w-10 h-10"
+            style={{ animation: 'bounce-in 600ms ease-out backwards' }}
+          />
+          <h1 className="text-2xl font-bold tracking-tight uppercase text-foreground">
+            {workoutType === 'push' ? 'PUSH' : workoutType === 'pull' ? 'PULL' : 'LEGS'}
+          </h1>
+          <p className="text-sm text-muted-foreground">{formatDisplayDate(date)}</p>
+        </div>
+
+        <div
+          className="flex items-center gap-3 text-sm text-muted-foreground"
+          style={{ animation: 'stagger-in 400ms ease-out 200ms backwards' }}
+        >
+          <span className="font-mono">WEEK {weekNumber}</span>
+          <span>·</span>
+          <span className="font-mono">{workout.setsPerExercise} SETS</span>
+          {streak > 0 && (
+            <>
+              <span>·</span>
+              <div className="flex items-center gap-1">
+                <Flame className="w-4 h-4 text-orange-500" />
+                <span className="font-mono text-orange-500">{streak}</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        <Button
+          size="lg"
+          onClick={workout.startWorkout}
+          className="rounded-full w-20 h-20 animate-pulse active:scale-95 transition-transform"
+        >
+          <Play className="w-10 h-10" />
+        </Button>
       </div>
 
-      <div
-        className="flex items-center gap-3 text-sm text-muted-foreground"
-        style={{ animation: 'stagger-in 400ms ease-out 200ms backwards' }}
-      >
-        <span className="font-mono">WEEK {weekNumber}</span>
-        <span>·</span>
-        <span className="font-mono">{workout.setsPerExercise} SETS</span>
-        {streak > 0 && (
-          <>
-            <span>·</span>
-            <div className="flex items-center gap-1">
-              <Flame className="w-4 h-4 text-orange-500" />
-              <span className="font-mono text-orange-500">{streak}</span>
-            </div>
-          </>
-        )}
+      {/* Weekly Split — scrollable if needed */}
+      <div className="flex-1 overflow-y-auto px-6 pb-2">
+        <WeeklySplit currentDate={date} data={workout.data} />
       </div>
-
-      <Button
-        size="lg"
-        onClick={workout.startWorkout}
-        className="rounded-full w-20 h-20 animate-pulse active:scale-95 transition-transform"
-      >
-        <Play className="w-10 h-10" />
-      </Button>
-
-      {/* Weekly Split Schedule */}
-      <WeeklySplit currentDate={date} data={workout.data} />
 
       {/* Bottom actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex-shrink-0 flex items-center justify-center gap-3 p-4 pb-6">
         <button
           onClick={() => router.push('/pair')}
           className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all"
