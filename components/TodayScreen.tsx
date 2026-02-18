@@ -23,6 +23,7 @@ import { getFirstSessionDate } from '@/lib/storage';
 import { getWorkoutType, getTrainingStreak } from '@/lib/schedule';
 import { PUSH_EXERCISES, PULL_EXERCISES, LEGS_EXERCISES } from '@/lib/constants';
 import { syncWithDesktop, getStoredDesktopInfo } from '@/lib/sync-client';
+import { playWentOffline, playBackOnline } from '@/lib/audio';
 
 const ONBOARDING_KEY = 'traindaily_onboarding_completed';
 
@@ -31,10 +32,14 @@ function useOfflineIndicator() {
   const [showBackOnline, setShowBackOnline] = useState(false);
 
   useEffect(() => {
-    const handleOffline = () => setIsOnline(false);
+    const handleOffline = () => {
+      setIsOnline(false);
+      playWentOffline();
+    };
     const handleOnline = () => {
       setIsOnline(true);
       setShowBackOnline(true);
+      playBackOnline();
       setTimeout(() => setShowBackOnline(false), 2000);
     };
     window.addEventListener('offline', handleOffline);
@@ -74,12 +79,14 @@ export function TodayScreen() {
     setShowOnboarding(false);
   };
 
+  const visible = !isOnline || showBackOnline;
   const offlineLine = (
     <div
-      className="fixed top-0 left-0 right-0 h-[2px] z-50 transition-all duration-500"
+      className="fixed top-0 left-0 right-0 h-[2px] z-50 transition-opacity duration-300"
       style={{
-        backgroundColor: showBackOnline ? 'oklch(0.7 0.2 145)' : !isOnline ? 'oklch(0.75 0.15 60)' : 'transparent',
-        opacity: isOnline && !showBackOnline ? 0 : 1,
+        backgroundColor: showBackOnline ? 'var(--system-green)' : 'var(--system-orange)',
+        opacity: visible ? 1 : 0,
+        animation: visible ? 'slide-down-in 300ms cubic-bezier(0.4, 0.0, 0.2, 1)' : undefined,
       }}
     />
   );

@@ -230,6 +230,18 @@ export function playBreakStart() {
   vibrate([100, 50, 100]);
 }
 
+/** Went offline — single soft descending tone 440→330, neutral awareness cue */
+export function playWentOffline() {
+  playTone(440, 0.12, 0.15, 0, 'triangle');
+  playTone(330, 0.10, 0.12, 0.10, 'triangle');
+}
+
+/** Back online — quick ascending two-note 440→660, "reconnected" */
+export function playBackOnline() {
+  playTone(440, 0.08, 0.15, 0, 'triangle');
+  playTone(660, 0.10, 0.15, 0.08, 'triangle');
+}
+
 /** Break done — descending bookend of breakStart, 880→660, "break closed" */
 export function playBreakDone() {
   playTone(880, 0.1, 0.25);
