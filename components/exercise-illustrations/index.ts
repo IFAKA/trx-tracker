@@ -1,1 +1,0 @@
-export { ExerciseIllustration } from './ExerciseIllustration';

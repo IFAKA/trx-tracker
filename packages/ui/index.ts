@@ -13,6 +13,12 @@ export * from './src/components/ui/progress';
 // Shared utilities
 export { cn } from './src/lib/utils';
 
+// Audio
+export * from './src/lib/audio';
+
+// DevTools context
+export * from './src/lib/devtools';
+
 // Workout screens
 export { ExerciseDemo } from './src/components/ExerciseDemo';
 export { ExerciseScreen } from './src/components/ExerciseScreen';

@@ -7,7 +7,9 @@
   "exports": {
     ".": "./index.ts",
     "./components/*": "./src/components/*",
-    "./lib/*": "./src/lib/*"
+    "./lib/*": "./src/lib/*",
+    "./lib/audio": "./src/lib/audio.ts",
+    "./lib/devtools": "./src/lib/devtools.ts"
   },
   "dependencies": {
     "@traindaily/core": "workspace:*",
