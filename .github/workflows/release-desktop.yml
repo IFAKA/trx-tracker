@@ -56,7 +56,7 @@ jobs:
       - name: Cache Rust build artifacts
         uses: Swatinem/rust-cache@v2
         with:
-          workingDirectory: packages/desktop/src-tauri
+          workspaces: packages/desktop/src-tauri
           cache-targets: true
           cache-on-failure: true
 
