@@ -72,7 +72,7 @@ export function HistoryScreen({ data, currentDate, onBack }: HistoryScreenProps)
   }, [data, currentDate]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-background p-6 gap-8 overflow-y-auto">
+    <div className="flex flex-col h-screen bg-background p-6 gap-8 overflow-y-auto">
       {/* Header */}
       <div className="flex items-center gap-4 pt-2">
         <button

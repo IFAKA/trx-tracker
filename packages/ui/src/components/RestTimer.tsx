@@ -22,7 +22,7 @@ export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, on
   const progress = ((REST_DURATION - seconds) / REST_DURATION) * 100;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-8">
+    <div className="flex flex-col items-center justify-center h-screen bg-background p-6 gap-8">
       {/* Quit */}
       <div className="absolute top-6 left-6">
         {showQuitConfirm ? (

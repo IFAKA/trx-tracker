@@ -148,7 +148,7 @@ export function SessionComplete(props: SessionCompleteProps) {
   const mobilityProps = !isWorkout ? (props as Extract<typeof props, { mode: 'mobility' }>) : null;
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-background p-6 gap-6">
+    <div className="flex flex-col items-center h-screen bg-background p-6 gap-6 overflow-y-auto">
       {/* Trophy */}
       <div className="flex-1 flex flex-col items-center justify-center gap-4">
         <Trophy

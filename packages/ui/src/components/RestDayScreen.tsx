@@ -59,7 +59,7 @@ export function RestDayScreen({ nextTraining, weekCompleted, weekTotal, mobility
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-8">
+    <div className="flex flex-col items-center justify-center h-screen bg-background p-6 gap-8">
       <Moon className="w-12 h-12 text-muted-foreground" />
       <h1 className="text-2xl font-bold tracking-tight">REST DAY</h1>
 

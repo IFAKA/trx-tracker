@@ -58,7 +58,7 @@ export function ExerciseScreen({
   return (
     <div
       className={cn(
-        'flex flex-col min-h-screen bg-background p-6 transition-colors duration-500',
+        'flex flex-col h-screen bg-background p-6 transition-colors duration-500 overflow-y-auto',
         flashColor === 'green' && 'bg-green-950/30',
         flashColor === 'red' && 'bg-red-950/30'
       )}

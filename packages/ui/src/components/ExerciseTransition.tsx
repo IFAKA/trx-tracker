@@ -16,7 +16,7 @@ export function ExerciseTransition({ exerciseName, onComplete }: ExerciseTransit
 
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-screen bg-background p-6 gap-6 cursor-pointer select-none"
+      className="flex flex-col items-center justify-center h-screen bg-background p-6 gap-6 cursor-pointer select-none"
       onClick={onComplete}
     >
       <ArrowRight
