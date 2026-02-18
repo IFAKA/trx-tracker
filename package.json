@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "sounds:generate": "./scripts/generate-sounds.sh",
@@ -12,6 +12,7 @@
     "release:dry": "semantic-release --dry-run"
   },
   "dependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@traindaily/core": "workspace:*",
     "@traindaily/ui": "workspace:*",
     "class-variance-authority": "^0.7.1",
