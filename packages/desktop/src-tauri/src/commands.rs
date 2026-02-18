@@ -112,13 +112,9 @@ pub fn set_open_at_login(enabled: bool, app: AppHandle, state: State<AppState>) 
 pub fn get_qr_code_data(state: State<AppState>) -> Result<String, String> {
     let local_ip = crate::sync::get_local_ip().map_err(|e| e.to_string())?;
 
-    // Auth token would be stored in state in production
-    // For now, generate a placeholder
-    let auth_token = "demo-token-12345678"; // TODO: Store in state
-
     let qr_data = crate::sync::generate_qr_data(
         &state.device_id,
-        auth_token,
+        &state.auth_token,
         &local_ip,
     );
 

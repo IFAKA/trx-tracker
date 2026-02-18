@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Dumbbell, Play, CheckCircle, Calendar, Smartphone, Flame, ChartBar } from 'lucide-react';
 import { Button } from '@traindaily/ui';
-import { useRouter } from 'next/navigation';
 import {
   ExerciseScreen,
   RestTimer,
@@ -22,7 +21,7 @@ import { formatDisplayDate, getWeekNumber } from '@/lib/workout-utils';
 import { getFirstSessionDate } from '@/lib/storage';
 import { getWorkoutType, getTrainingStreak } from '@/lib/schedule';
 import { PUSH_EXERCISES, PULL_EXERCISES, LEGS_EXERCISES } from '@/lib/constants';
-import { syncWithDesktop, getStoredDesktopInfo } from '@/lib/sync-client';
+import { syncWithDesktop, getStoredDesktopInfo, clearDesktopInfo } from '@/lib/sync-client';
 import { playWentOffline, playBackOnline } from '@/lib/audio';
 
 const ONBOARDING_KEY = 'traindaily_onboarding_completed';
@@ -110,7 +109,6 @@ export function TodayScreen() {
 }
 
 function TodayContent({ date }: { date: Date }) {
-  const router = useRouter();
   const schedule = useSchedule(date);
   const workout = useWorkout(date);
   const mobility = useMobility();
@@ -125,12 +123,32 @@ function TodayContent({ date }: { date: Date }) {
 
   // Check if desktop is paired
   const [isPaired, setIsPaired] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [showPairHint, setShowPairHint] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const desktopInfo = localStorage.getItem('traindaily_desktop_info');
       setIsPaired(!!desktopInfo);
     }
   }, []);
+
+  const handlePairButton = async () => {
+    if (isPaired) {
+      setSyncStatus('syncing');
+      const result = await syncWithDesktop();
+      setSyncStatus(result.success ? 'success' : 'error');
+      setTimeout(() => setSyncStatus('idle'), 2000);
+    } else {
+      setShowPairHint(true);
+      setTimeout(() => setShowPairHint(false), 4000);
+    }
+  };
+
+  const handleUnpair = () => {
+    clearDesktopInfo();
+    setIsPaired(false);
+    setSyncStatus('idle');
+  };
 
   // History screen
   if (showHistory) {
@@ -319,23 +337,46 @@ function TodayContent({ date }: { date: Date }) {
       </div>
 
       {/* Bottom actions */}
-      <div className="flex-shrink-0 flex items-center justify-center gap-3 p-4 pb-6">
-        <button
-          onClick={() => router.push('/pair')}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all"
-        >
-          <Smartphone className="w-4 h-4" />
-          <span className="text-sm">
-            {isPaired ? 'Paired with Desktop' : 'Pair with Desktop'}
-          </span>
-        </button>
-        <button
-          onClick={() => setShowHistory(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all"
-        >
-          <ChartBar className="w-4 h-4" />
-          <span className="text-sm">History</span>
-        </button>
+      <div className="flex-shrink-0 flex flex-col items-center gap-2 p-4 pb-6">
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={handlePairButton}
+            disabled={syncStatus === 'syncing'}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all disabled:opacity-50"
+          >
+            <Smartphone className="w-4 h-4" />
+            <span className="text-sm">
+              {syncStatus === 'syncing' ? 'Syncing...' :
+               syncStatus === 'success' ? 'Synced!' :
+               syncStatus === 'error' ? 'Sync failed' :
+               isPaired ? 'Sync with Desktop' : 'Pair with Desktop'}
+            </span>
+          </button>
+          <button
+            onClick={() => setShowHistory(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all"
+          >
+            <ChartBar className="w-4 h-4" />
+            <span className="text-sm">History</span>
+          </button>
+        </div>
+
+        {/* Inline hint when not paired */}
+        {showPairHint && (
+          <p className="text-xs text-muted-foreground text-center animate-in fade-in">
+            Open the desktop app → Pair Device → scan QR with your camera
+          </p>
+        )}
+
+        {/* Unpair option when paired */}
+        {isPaired && syncStatus === 'idle' && (
+          <button
+            onClick={handleUnpair}
+            className="text-xs text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+          >
+            Disconnect desktop
+          </button>
+        )}
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ use std::sync::{Arc, Mutex};
 pub struct AppState {
     pub db: Arc<Mutex<db::Database>>,
     pub device_id: String,
+    pub auth_token: String,
     pub blocker_state: Arc<Mutex<blocker::BlockerState>>,
     pub overlay_state: Arc<Mutex<overlay::OverlayState>>,
     #[cfg(desktop)]
@@ -30,6 +31,16 @@ pub fn run() {
     // Initialize database
     let db = db::Database::new().expect("Failed to initialize database");
     let device_id = db.get_device_id().expect("Failed to get device ID");
+
+    // Load or generate persistent auth token (used for QR pairing + sync server)
+    let auth_token = db.get_setting("auth_token")
+        .ok()
+        .flatten()
+        .unwrap_or_else(|| {
+            let token = sync::generate_auth_token();
+            let _ = db.set_setting("auth_token", &token);
+            token
+        });
 
     // Read saved tray preference before moving db into Arc
     let tray_visible = db.get_setting("tray_visible")
@@ -50,12 +61,14 @@ pub fn run() {
     let db_for_sync = db_arc.clone();
     let db_for_blocker = db_arc.clone();
     let device_id_for_sync = device_id.clone();
+    let auth_token_for_sync = auth_token.clone();
     let blocker_state_for_task = blocker_state.clone();
     let overlay_state_for_task = overlay_state.clone();
 
     let state = AppState {
         db: db_arc,
         device_id,
+        auth_token,
         blocker_state: blocker_state.clone(),
         overlay_state: overlay_state.clone(),
         #[cfg(desktop)]
@@ -97,9 +110,10 @@ pub fn run() {
             // Start sync server
             let db_clone = db_for_sync.clone();
             let device_id_clone = device_id_for_sync.clone();
+            let auth_token_clone = auth_token_for_sync.clone();
 
             tauri::async_runtime::spawn(async move {
-                if let Err(e) = sync::start_server(db_clone, device_id_clone).await {
+                if let Err(e) = sync::start_server(db_clone, device_id_clone, auth_token_clone).await {
                     tracing::error!("Failed to start sync server: {}", e);
                 }
             });

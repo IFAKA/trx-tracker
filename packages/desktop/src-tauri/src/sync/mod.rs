@@ -43,9 +43,8 @@ struct AuthQuery {
 pub async fn start_server(
     db: Arc<Mutex<Database>>,
     device_id: String,
+    auth_token: String,
 ) -> Result<()> {
-    // Generate random auth token (used in QR code)
-    let auth_token = generate_auth_token();
 
     tracing::info!("Sync server auth token: {}", auth_token);
     tracing::info!("Device ID: {}", device_id);
@@ -199,7 +198,7 @@ fn verify_auth(query: &AuthQuery, headers: &HeaderMap, expected: &str) -> bool {
 }
 
 /// Generate random auth token (32 hex characters)
-fn generate_auth_token() -> String {
+pub fn generate_auth_token() -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();
     let bytes: Vec<u8> = (0..16).map(|_| rng.gen()).collect();
