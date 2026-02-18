@@ -29,7 +29,7 @@ export function WeeklySplit({ currentDate, data }: WeeklySplitProps) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   return (
-    <div className="w-full max-w-md space-y-2">
+    <div className="w-full max-w-md mx-auto space-y-2">
       <div className="flex items-center justify-between text-xs text-muted-foreground/60 uppercase tracking-widest mb-3">
         <span>This Week</span>
         <Dumbbell className="w-3.5 h-3.5" />
