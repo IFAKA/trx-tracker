@@ -91,7 +91,7 @@ pub fn run() {
                 let state = app.state::<AppState>();
                 if let Ok(db) = state.db.lock() {
                     let _ = db.set_setting("open_at_login", "true");
-                }
+                };
             }
 
             // Start sync server
