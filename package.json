@@ -24,9 +24,9 @@
     "react-dom": "19.2.3",
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.4.1",
-    "vercel": "^50.18.1"
   },
   "devDependencies": {
+    "vercel": "^50.18.1",
     "@playwright/test": "^1.58.2",
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
