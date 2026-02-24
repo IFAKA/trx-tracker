@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback } from 'react';
-import { Pause, SkipForward } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Pause, SkipForward, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
+import { QuitConfirmDialog } from './QuitConfirmDialog';
 import { MobilityExercise } from '@traindaily/core';
 import { ExerciseDemo } from './ExerciseDemo';
 
@@ -17,6 +18,7 @@ interface MobilityFlowProps {
   onSkip: () => void;
   onPause: () => void;
   onResume: () => void;
+  onQuit: () => void;
 }
 
 export function MobilityFlow({
@@ -29,7 +31,9 @@ export function MobilityFlow({
   onSkip,
   onPause,
   onResume,
+  onQuit,
 }: MobilityFlowProps) {
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const progressPercent = (exerciseIndex / totalExercises) * 100;
 
   const handlePlayingChange = useCallback(
@@ -47,11 +51,25 @@ export function MobilityFlow({
     <div className="flex flex-col h-[100dvh] bg-background p-6 overflow-hidden">
       {/* Progress */}
       <div className="flex items-center gap-3 mb-2">
+        <button
+          type="button"
+          onClick={() => setShowQuitConfirm(true)}
+          className="p-1 -ml-1 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          aria-label="Quit mobility"
+        >
+          <X className="w-5 h-5" />
+        </button>
         <Progress value={progressPercent} className="flex-1 h-1.5" />
         <span className="text-xs text-muted-foreground font-mono">
           {exerciseIndex + 1}/{totalExercises}
         </span>
       </div>
+
+      <QuitConfirmDialog
+        open={showQuitConfirm}
+        onOpenChange={setShowQuitConfirm}
+        onConfirm={onQuit}
+      />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col items-center justify-center gap-6">

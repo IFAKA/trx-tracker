@@ -20,6 +20,7 @@ export interface MobilityHookState {
   skip: () => void;
   pause: () => void;
   resume: () => void;
+  quit: () => void;
 }
 
 interface RestDayScreenProps {
@@ -42,6 +43,7 @@ export function RestDayScreen({ nextTraining, weekCompleted, weekTotal, mobility
         onSkip={mobility.skip}
         onPause={mobility.pause}
         onResume={mobility.resume}
+        onQuit={mobility.quit}
       />
     );
   }

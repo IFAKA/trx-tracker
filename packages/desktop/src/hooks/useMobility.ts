@@ -91,6 +91,17 @@ export function useMobility() {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isActive, isPaused, timer, exercise, exerciseIndex, side]);
 
+  const quit = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsActive(false);
+    setExerciseIndex(0);
+    setTimer(0);
+    setSide(null);
+  }, []);
+
   const skip = useCallback(() => {
     playSkip();
     setTimer(0);
@@ -109,5 +120,6 @@ export function useMobility() {
     skip,
     pause,
     resume,
+    quit,
   };
 }

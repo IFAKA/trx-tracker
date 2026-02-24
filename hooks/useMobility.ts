@@ -142,5 +142,6 @@ export function useMobility() {
     skip,
     pause,
     resume,
+    quit,
   };
 }
