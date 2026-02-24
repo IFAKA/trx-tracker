@@ -4,8 +4,47 @@ import { useState, useRef, useEffect } from 'react';
 import { Check } from 'lucide-react';
 
 const ITEM_H = 60;
-const VISIBLE = 5; // odd — center slot is the selected value
+const VISIBLE = 5;
 const CENTER = Math.floor(VISIBLE / 2); // 2
+
+// ── Tick sound ────────────────────────────────────────────────────────────────
+// Short triangle-wave chirp, 900→350 Hz in 25ms — mimics native picker tick
+
+let _audioCtx: AudioContext | null = null;
+
+function getAudioCtx(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  if (!_audioCtx) {
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return null;
+    try { _audioCtx = new Ctor(); } catch { return null; }
+  }
+  return _audioCtx;
+}
+
+function playTick() {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  try {
+    if (ctx.state === 'suspended') ctx.resume();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(900, t);
+    osc.frequency.exponentialRampToValueAtTime(350, t + 0.025);
+    gain.gain.setValueAtTime(0.10, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.030);
+    osc.start(t);
+    osc.stop(t + 0.030);
+  } catch { /* silently ignore if audio not available */ }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 interface NumberWheelProps {
   defaultValue: number;
@@ -18,11 +57,13 @@ interface NumberWheelProps {
 export function NumberWheel({ defaultValue, min = 0, max, label, onConfirm }: NumberWheelProps) {
   const init = Math.min(Math.max(defaultValue, min), max);
 
-  // Single float source of truth — drives both translateY and item opacity/size
+  // floatRef is the single source of truth for position.
+  // It ALWAYS equals the current visual position — no CSS transition lag.
   const [float, setFloat] = useState(init);
   const floatRef = useRef(init);
+  const lastTickInt = useRef(init);
 
-  // Scroll state
+  // Drag
   const dragging = useRef(false);
   const hasMoved = useRef(false);
   const startY = useRef(0);
@@ -30,18 +71,13 @@ export function NumberWheel({ defaultValue, min = 0, max, label, onConfirm }: Nu
   const velY = useRef(0);
   const lastY = useRef(0);
   const lastT = useRef(0);
-  const lastHapticInt = useRef(init);
   const raf = useRef<number>(0);
-  const animatingTo = useRef<number | null>(null); // target int for snap animation
 
-  // CSS transition toggle — only active during final snap after lift
-  const [snapping, setSnapping] = useState(false);
-
-  // Edit (tap-to-type) state
+  // Edit (tap-to-type)
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState('');
   const editStartVal = useRef(init);
-  const editDone = useRef(false); // guards against blur firing after Enter/Escape
+  const editDone = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -54,30 +90,42 @@ export function NumberWheel({ defaultValue, min = 0, max, label, onConfirm }: Nu
 
   const clamp = (v: number) => Math.min(max, Math.max(min, v));
 
-  function setFloatBoth(fv: number) {
+  function applyFloat(fv: number) {
     floatRef.current = fv;
     setFloat(fv);
-  }
-
-  function tickHaptic(fv: number) {
-    const snapped = Math.round(fv);
-    if (snapped !== lastHapticInt.current) {
-      lastHapticInt.current = snapped;
+    // Fire tick on integer boundary crossing
+    const intNow = Math.round(fv);
+    if (intNow !== lastTickInt.current) {
+      lastTickInt.current = intNow;
+      playTick();
       if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(2);
     }
   }
 
-  // ── Drag handlers ─────────────────────────────────────────────────────────
+  // JS-based ease-to-target — floatRef tracks real position at all times
+  function easeToInt(from: number, target: number) {
+    const dist = Math.abs(target - from);
+    if (dist < 0.001) { applyFloat(target); return; }
+    const duration = Math.min(380, Math.max(80, dist * 55)); // scale with distance
+    const startTime = performance.now();
+    const step = (now: number) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // cubic ease-out
+      applyFloat(from + (target - from) * eased);
+      if (t < 1) raf.current = requestAnimationFrame(step);
+    };
+    raf.current = requestAnimationFrame(step);
+  }
+
+  // ── Drag ──────────────────────────────────────────────────────────────────
 
   function onPointerDown(e: React.PointerEvent) {
     if (editing) return;
-    cancelAnimationFrame(raf.current);
-    animatingTo.current = null;
+    cancelAnimationFrame(raf.current); // kill any in-progress ease
     dragging.current = true;
     hasMoved.current = false;
-    snapping && setSnapping(false);
     startY.current = e.clientY;
-    startFloat.current = floatRef.current;
+    startFloat.current = floatRef.current; // always the real visual position
     lastY.current = e.clientY;
     lastT.current = Date.now();
     velY.current = 0;
@@ -88,10 +136,7 @@ export function NumberWheel({ defaultValue, min = 0, max, label, onConfirm }: Nu
     if (!dragging.current) return;
     const dy = e.clientY - startY.current;
     if (Math.abs(dy) > 4) hasMoved.current = true;
-    const fv = clamp(startFloat.current - dy / ITEM_H);
-    setFloatBoth(fv);
-    tickHaptic(fv);
-
+    applyFloat(clamp(startFloat.current - dy / ITEM_H));
     const now = Date.now();
     const dt = now - lastT.current;
     if (dt > 0) velY.current = (e.clientY - lastY.current) / dt;
@@ -103,49 +148,54 @@ export function NumberWheel({ defaultValue, min = 0, max, label, onConfirm }: Nu
     if (!dragging.current) return;
     dragging.current = false;
 
-    // Tap on center → open keyboard edit
+    // Tap on center → open keyboard input
     if (!hasMoved.current && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const y = e.clientY - rect.top;
       if (y >= CENTER * ITEM_H && y < (CENTER + 1) * ITEM_H) {
-        const current = clamp(Math.round(floatRef.current));
+        const cur = clamp(Math.round(floatRef.current));
         editDone.current = false;
-        editStartVal.current = current;
-        setEditText(String(current));
+        editStartVal.current = cur;
+        setEditText(String(cur));
         setEditing(true);
         return;
       }
     }
 
-    // Calculate where momentum will carry the wheel using geometric series:
-    //   total displacement = vel / (1 − damping) × frame_ms / ITEM_H
     const vel = velY.current;
-    const totalDelta = Math.abs(vel) > 0.08 ? (vel / (1 - 0.88)) * 16 / ITEM_H : 0;
-    const target = clamp(Math.round(floatRef.current - totalDelta));
 
-    animatingTo.current = target;
-    lastHapticInt.current = target;
-    setSnapping(true);
-    setFloatBoth(target);
+    if (Math.abs(vel) < 0.06) {
+      // No real momentum — just snap to nearest
+      easeToInt(floatRef.current, clamp(Math.round(floatRef.current)));
+      return;
+    }
 
-    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(2);
-
-    // Remove transition class after animation finishes
-    setTimeout(() => {
-      setSnapping(false);
-      animatingTo.current = null;
-    }, 420);
+    // Momentum decay via RAF — floatRef always = visual position
+    let v = vel;
+    const decay = () => {
+      v *= 0.88;
+      const next = clamp(floatRef.current - v * 16 / ITEM_H);
+      applyFloat(next);
+      if (Math.abs(v) > 0.06) {
+        raf.current = requestAnimationFrame(decay);
+      } else {
+        // Smoothly ease into the nearest integer
+        easeToInt(floatRef.current, clamp(Math.round(floatRef.current)));
+      }
+    };
+    raf.current = requestAnimationFrame(decay);
   }
 
-  // ── Edit handlers ─────────────────────────────────────────────────────────
+  // ── Edit ──────────────────────────────────────────────────────────────────
 
   function finishEdit(text: string) {
     if (editDone.current) return;
     editDone.current = true;
     const n = parseInt(text, 10);
     const target = !isNaN(n) && text.trim() !== '' ? clamp(n) : editStartVal.current;
-    lastHapticInt.current = target;
-    setFloatBoth(target);
+    lastTickInt.current = target;
+    floatRef.current = target;
+    setFloat(target);
     setEditing(false);
   }
 
@@ -153,15 +203,16 @@ export function NumberWheel({ defaultValue, min = 0, max, label, onConfirm }: Nu
     if (editDone.current) return;
     editDone.current = true;
     const v = editStartVal.current;
-    lastHapticInt.current = v;
-    setFloatBoth(v);
+    lastTickInt.current = v;
+    floatRef.current = v;
+    setFloat(v);
     setEditing(false);
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
 
   const translateY = CENTER * ITEM_H - (float - min) * ITEM_H;
-  const centerInt = Math.round(float);
+  const centerInt = clamp(Math.round(float));
   const numbers = Array.from({ length: max - min + 1 }, (_, i) => min + i);
 
   return (
@@ -183,28 +234,24 @@ export function NumberWheel({ defaultValue, min = 0, max, label, onConfirm }: Nu
           style={{ top: CENTER * ITEM_H, height: ITEM_H }}
         />
 
-        {/* Scrolling column */}
+        {/* Scrolling column — no CSS transition, JS drives everything */}
         <div
           className="absolute w-full will-change-transform"
-          style={{
-            transform: `translateY(${translateY}px)`,
-            transition: snapping ? 'transform 380ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
-          }}
+          style={{ transform: `translateY(${translateY}px)` }}
         >
           {numbers.map((n) => {
-            const dist = Math.abs(n - float); // float distance for smooth opacity
-            const distInt = Math.abs(n - centerInt); // integer distance for size
+            const dist = Math.abs(n - float);    // continuous float → smooth opacity
+            const distInt = Math.abs(n - centerInt); // integer → size steps
+            const isCenter = distInt === 0;
             return (
               <div
                 key={n}
                 className="flex items-center justify-center font-mono font-bold"
                 style={{
                   height: ITEM_H,
-                  fontSize: distInt === 0 ? 42 : distInt === 1 ? 26 : 18,
-                  opacity: Math.max(0.04, 1 - dist * 0.55),
-                  transition: snapping
-                    ? 'font-size 380ms cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 380ms cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-                    : 'font-size 60ms ease-out, opacity 40ms linear',
+                  fontSize: isCenter ? 42 : distInt === 1 ? 26 : 18,
+                  // Hide center number when input is overlaid — same slot, same size
+                  opacity: editing && isCenter ? 0 : Math.max(0.04, 1 - dist * 0.55),
                 }}
               >
                 {n}
@@ -217,7 +264,7 @@ export function NumberWheel({ defaultValue, min = 0, max, label, onConfirm }: Nu
         <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background to-transparent pointer-events-none z-20" />
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none z-20" />
 
-        {/* Keyboard edit — floats over center slot */}
+        {/* Tap-to-type input — exact same size as center number (42px) */}
         {editing && (
           <div
             className="absolute inset-x-0 z-30 flex items-center justify-center"
@@ -235,18 +282,19 @@ export function NumberWheel({ defaultValue, min = 0, max, label, onConfirm }: Nu
                 if (e.key === 'Enter') { e.preventDefault(); finishEdit(editText); }
                 if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
               }}
-              className="w-20 text-center text-3xl font-mono font-bold bg-transparent border-none outline-none text-foreground caret-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-full text-center font-mono font-bold bg-transparent border-none outline-none text-foreground caret-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              style={{ fontSize: 42 }}
             />
           </div>
         )}
       </div>
 
-      {/* Confirm */}
+      {/* Confirm — onMouseDown prevents blurring the input while editing */}
       <button
-        onMouseDown={(e) => e.preventDefault()} // keeps focus on input if editing
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => {
           if (editing) finishEdit(editText);
-          onConfirm(clamp(Math.round(floatRef.current)));
+          else onConfirm(clamp(Math.round(floatRef.current)));
         }}
         className="w-14 h-14 rounded-full bg-foreground text-background flex items-center justify-center active:scale-95 transition-transform shadow-md"
       >
