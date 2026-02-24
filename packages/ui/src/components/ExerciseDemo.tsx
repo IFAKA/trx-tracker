@@ -103,7 +103,7 @@ export function ExerciseDemo({ youtubeId, title, onPlayingChange }: ExerciseDemo
 
   if (showPlayer) {
     return (
-      <div className="w-full max-w-[280px] aspect-video rounded-lg overflow-hidden bg-black">
+      <div className="w-full aspect-video rounded-lg overflow-hidden bg-black">
         <div ref={containerRef} className="w-full h-full" />
       </div>
     );
@@ -113,7 +113,7 @@ export function ExerciseDemo({ youtubeId, title, onPlayingChange }: ExerciseDemo
     <button
       type="button"
       onClick={handleTap}
-      className="relative block w-full max-w-[280px] rounded-lg overflow-hidden group"
+      className="relative block w-full rounded-lg overflow-hidden group"
       aria-label={`Watch ${title} demo`}
     >
       <img

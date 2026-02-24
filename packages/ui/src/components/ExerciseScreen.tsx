@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Target, TrendingUp, TrendingDown, Minus, Info, X, Check } from 'lucide-react';
+import { Target, TrendingUp, TrendingDown, Minus, Info, X, Check, ChevronLeft } from 'lucide-react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
@@ -48,13 +48,16 @@ export function ExerciseScreen({
     inputRef.current?.focus();
   }, [exerciseIndex, currentSet]);
 
-  // Back button closes "how to" panel instead of navigating away
+  // Back button: close how-to if open, otherwise show quit confirm
   useEffect(() => {
-    if (!showInstruction) return;
     const handlePopState = () => {
-      setShowInstruction(false);
+      if (showInstruction) {
+        setShowInstruction(false);
+      } else {
+        setShowQuitConfirm(true);
+      }
     };
-    window.history.pushState({ howTo: true }, '');
+    window.history.pushState({ exercise: true }, '');
     window.addEventListener('popstate', handlePopState);
     return () => {
       window.removeEventListener('popstate', handlePopState);
@@ -75,13 +78,47 @@ export function ExerciseScreen({
   return (
     <div
       className={cn(
-        'flex flex-col h-[100dvh] bg-background p-4 sm:p-6 transition-colors duration-500 overflow-hidden',
+        'flex flex-col h-[100dvh] bg-background transition-colors duration-500 overflow-hidden',
         flashColor === 'green' && 'bg-green-950/30',
         flashColor === 'red' && 'bg-red-950/30'
       )}
     >
+      {/* Fullscreen how-to overlay */}
+      {showInstruction && (
+        <div className="fixed inset-0 z-40 bg-background flex flex-col">
+          <div className="flex items-center gap-3 p-4">
+            <button
+              type="button"
+              onClick={() => setShowInstruction(false)}
+              className="p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              aria-label="Close how to"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <h2 className="text-lg font-semibold flex-1">{exercise.name}</h2>
+          </div>
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4 pb-8 overflow-y-auto min-h-0">
+            {exercise.youtubeId && (
+              <div className="w-full max-w-sm">
+                <ExerciseDemo youtubeId={exercise.youtubeId} title={exercise.name} />
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground text-center max-w-sm leading-relaxed">
+              {exercise.instruction}
+            </p>
+            <Button
+              variant="outline"
+              className="rounded-full px-6"
+              onClick={() => setShowInstruction(false)}
+            >
+              Got it
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Top bar */}
-      <div className="flex items-center gap-3 mb-2">
+      <div className="flex items-center gap-3 p-4 pb-0 shrink-0">
         <button
           type="button"
           onClick={() => setShowQuitConfirm(true)}
@@ -96,39 +133,25 @@ export function ExerciseScreen({
         </span>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 sm:gap-8 overflow-y-auto min-h-0">
-        {/* Exercise name + info */}
-        <div className="flex flex-col items-center gap-2">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center font-[family-name:var(--font-geist-sans)]">
+      {/* Main content - scrollable, compact for keyboard */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 overflow-y-auto min-h-0 px-4 py-2">
+        {/* Exercise name + how to */}
+        <div className="flex flex-col items-center gap-1.5 shrink-0">
+          <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-center font-[family-name:var(--font-geist-sans)]">
             {exercise.name}
           </h1>
           <button
             type="button"
-            onClick={() => setShowInstruction(!showInstruction)}
-            className={`flex items-center gap-1.5 text-xs transition-colors border rounded-full px-3 py-1 ${
-              showInstruction
-                ? 'text-foreground border-foreground/50 bg-muted/50'
-                : 'text-muted-foreground/80 hover:text-foreground border-muted-foreground/30'
-            }`}
+            onClick={() => setShowInstruction(true)}
+            className="flex items-center gap-1.5 text-xs transition-colors border rounded-full px-3 py-1 text-muted-foreground/80 hover:text-foreground border-muted-foreground/30"
           >
             <Info className="w-3.5 h-3.5" />
-            <span>{showInstruction ? 'hide' : 'how to'}</span>
+            <span>how to</span>
           </button>
-          {showInstruction && (
-            <>
-              {exercise.youtubeId && (
-                <ExerciseDemo youtubeId={exercise.youtubeId} title={exercise.name} />
-              )}
-              <p className="text-sm text-muted-foreground text-center max-w-[280px] leading-relaxed">
-                {exercise.instruction}
-              </p>
-            </>
-          )}
         </div>
 
         {/* Set dots */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           {Array.from({ length: setsPerExercise }).map((_, i) => (
             <div
               key={i === currentSet - 1 ? `dot-${i}-${currentSet}` : i}
@@ -150,11 +173,11 @@ export function ExerciseScreen({
         </div>
 
         {/* Target */}
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-xs uppercase tracking-widest text-muted-foreground">Target</span>
+        <div className="flex flex-col items-center shrink-0">
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Target</span>
           <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-muted-foreground" />
-            <span className="text-3xl font-mono font-bold text-foreground">
+            <Target className="w-4 h-4 text-muted-foreground" />
+            <span className="text-2xl font-mono font-bold text-foreground">
               {currentTarget}
             </span>
             {exercise.unit === 'seconds' && (
@@ -164,8 +187,8 @@ export function ExerciseScreen({
         </div>
 
         {/* Input */}
-        <div className="flex flex-col items-center gap-3 w-40">
-          <span className="text-xs uppercase tracking-widest text-muted-foreground">
+        <div className="flex flex-col items-center gap-2 w-40 shrink-0">
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
             {exercise.unit === 'seconds' ? 'Seconds held' : 'Reps done'}
           </span>
           <Input
@@ -176,7 +199,7 @@ export function ExerciseScreen({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="text-center text-4xl font-mono h-16 border-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="text-center text-4xl font-mono h-14 border-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             placeholder=""
             min={0}
           />
@@ -184,15 +207,15 @@ export function ExerciseScreen({
             size="lg"
             onClick={handleSubmit}
             disabled={inputValue === ''}
-            className="rounded-full w-14 h-14 active:scale-95 transition-transform"
+            className="rounded-full w-12 h-12 active:scale-95 transition-transform"
           >
-            <Check className="w-7 h-7" />
+            <Check className="w-6 h-6" />
           </Button>
         </div>
 
         {/* Previous performance */}
         {previousRep !== null && (
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground shrink-0">
             {flashColor === 'green' ? (
               <TrendingUp className="w-4 h-4 text-green-500" />
             ) : flashColor === 'red' ? (
