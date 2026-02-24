@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { ArrowLeft, Trophy } from 'lucide-react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { format, startOfWeek, addDays, subWeeks } from 'date-fns';
@@ -26,6 +26,17 @@ const TYPE_BG: Record<Exclude<WorkoutType, 'rest'>, string> = {
 };
 
 export function HistoryScreen({ data, currentDate, onBack }: HistoryScreenProps) {
+  // Trap back gesture to call onBack instead of navigating away
+  useEffect(() => {
+    const handlePopState = () => {
+      onBack();
+      window.history.pushState({ history: true }, '');
+    };
+    window.history.pushState({ history: true }, '');
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [onBack]);
+
   const totalSessions = useMemo(
     () => Object.values(data).filter((s) => s.logged_at).length,
     [data]

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import { Timer, SkipForward, X, Pause, Play, RotateCcw } from 'lucide-react';
 import { Button } from './ui/button';
@@ -18,6 +18,26 @@ interface RestTimerProps {
 
 export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, onUndo }: RestTimerProps) {
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const showQuitConfirmRef = useRef(false);
+
+  useEffect(() => {
+    showQuitConfirmRef.current = showQuitConfirm;
+  }, [showQuitConfirm]);
+
+  // Trap back gesture: show quit confirm (or dismiss it if already open)
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showQuitConfirmRef.current) {
+        setShowQuitConfirm(false);
+      } else {
+        setShowQuitConfirm(true);
+      }
+      window.history.pushState({ rest: true }, '');
+    };
+    window.history.pushState({ rest: true }, '');
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   const display = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
