@@ -5,12 +5,15 @@ import { Target, TrendingUp, TrendingDown, Minus, Info, X, Check } from 'lucide-
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
-import { EXERCISES } from '@traindaily/core';
+import type { Exercise } from '@traindaily/core';
 import { cn } from '../lib/utils';
 import { ExerciseDemo } from './ExerciseDemo';
+import { QuitConfirmDialog } from './QuitConfirmDialog';
 
 interface ExerciseScreenProps {
+  exercise: Exercise;
   exerciseIndex: number;
+  totalExercises: number;
   currentSet: number;
   setsPerExercise: number;
   currentTarget: number;
@@ -21,7 +24,9 @@ interface ExerciseScreenProps {
 }
 
 export function ExerciseScreen({
+  exercise,
   exerciseIndex,
+  totalExercises,
   currentSet,
   setsPerExercise,
   currentTarget,
@@ -34,8 +39,7 @@ export function ExerciseScreen({
   const [showInstruction, setShowInstruction] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const exercise = EXERCISES[exerciseIndex];
-  const progressPercent = ((exerciseIndex) / EXERCISES.length) * 100;
+  const progressPercent = (exerciseIndex / totalExercises) * 100;
 
   useEffect(() => {
     setInputValue('');
@@ -43,6 +47,19 @@ export function ExerciseScreen({
     setShowQuitConfirm(false);
     inputRef.current?.focus();
   }, [exerciseIndex, currentSet]);
+
+  // Back button closes "how to" panel instead of navigating away
+  useEffect(() => {
+    if (!showInstruction) return;
+    const handlePopState = () => {
+      setShowInstruction(false);
+    };
+    window.history.pushState({ howTo: true }, '');
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [showInstruction]);
 
   const handleSubmit = () => {
     const val = parseInt(inputValue);
@@ -58,47 +75,29 @@ export function ExerciseScreen({
   return (
     <div
       className={cn(
-        'flex flex-col h-screen bg-background p-6 transition-colors duration-500 overflow-y-auto',
+        'flex flex-col h-[100dvh] bg-background p-4 sm:p-6 transition-colors duration-500 overflow-hidden',
         flashColor === 'green' && 'bg-green-950/30',
         flashColor === 'red' && 'bg-red-950/30'
       )}
     >
       {/* Top bar */}
       <div className="flex items-center gap-3 mb-2">
-        {showQuitConfirm ? (
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="text-xs text-muted-foreground">Quit?</span>
-            <button
-              onClick={onQuit}
-              className="text-xs text-destructive hover:text-destructive/80 transition-colors font-medium"
-            >
-              Yes
-            </button>
-            <button
-              onClick={() => setShowQuitConfirm(false)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              No
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowQuitConfirm(true)}
-            className="p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-            aria-label="Quit workout"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowQuitConfirm(true)}
+          className="p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          aria-label="Quit workout"
+        >
+          <X className="w-5 h-5" />
+        </button>
         <Progress value={progressPercent} className="flex-1 h-1.5" />
         <span className="text-xs text-muted-foreground font-mono">
-          {exerciseIndex + 1}/{EXERCISES.length}
+          {exerciseIndex + 1}/{totalExercises}
         </span>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-8">
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 sm:gap-8 overflow-y-auto min-h-0">
         {/* Exercise name + info */}
         <div className="flex flex-col items-center gap-2">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-center font-[family-name:var(--font-geist-sans)]">
@@ -222,6 +221,12 @@ export function ExerciseScreen({
           )}
         </div>
       )}
+
+      <QuitConfirmDialog
+        open={showQuitConfirm}
+        onOpenChange={setShowQuitConfirm}
+        onConfirm={onQuit}
+      />
     </div>
   );
 }

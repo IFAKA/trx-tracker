@@ -7,7 +7,7 @@ export const PUSH_EXERCISES: Exercise[] = [
     name: 'TRX PUSH-UP',
     unit: 'reps',
     instruction: 'Hands in TRX handles, body straight. Lower chest between handles, press back up. Harder than regular pushups.',
-    youtubeId: 'IODxDxX7oi4',
+    youtubeId: 'OlUqeytSoxE',
     workoutType: 'push',
   },
   {
@@ -15,7 +15,7 @@ export const PUSH_EXERCISES: Exercise[] = [
     name: 'PIKE PUSH-UP',
     unit: 'reps',
     instruction: 'Pike position, hips high. Bend elbows, lower head toward floor. Press back up. Targets shoulders.',
-    youtubeId: 'FnQYhyUzVpQ',
+    youtubeId: 'XckEEwa1BPI',
     workoutType: 'push',
   },
   {
@@ -23,7 +23,7 @@ export const PUSH_EXERCISES: Exercise[] = [
     name: 'TRX TRICEP EXTENSION',
     unit: 'reps',
     instruction: 'Face away from anchor, arms extended. Bend elbows, lower body. Extend arms. Keep elbows tight.',
-    youtubeId: 'zgZ7_o5aYlw',
+    youtubeId: 'VKqhVPiLh00',
     workoutType: 'push',
   },
   {
@@ -43,7 +43,7 @@ export const PULL_EXERCISES: Exercise[] = [
     name: 'TRX ROW',
     unit: 'reps',
     instruction: 'Hang under TRX, body straight. Pull chest to handles, squeeze shoulder blades. Lower with control.',
-    youtubeId: 'FyXAZW5zDhw',
+    youtubeId: 'fW_jdwZT804',
     workoutType: 'pull',
   },
   {
@@ -51,7 +51,7 @@ export const PULL_EXERCISES: Exercise[] = [
     name: 'TRX FACE PULL',
     unit: 'reps',
     instruction: 'Lean back holding TRX. Pull handles to face, elbows high and wide. Squeeze rear delts.',
-    youtubeId: 'zgZ7_o5aYlw',
+    youtubeId: 'Jbyoxer58j4',
     workoutType: 'pull',
   },
   {
@@ -59,7 +59,7 @@ export const PULL_EXERCISES: Exercise[] = [
     name: 'TRX BICEP CURL',
     unit: 'reps',
     instruction: 'Lean back, palms up. Curl handles to shoulders, keep elbows high. Lower with control.',
-    youtubeId: 'fZjzpiOJjpg',
+    youtubeId: 'xG57S0fgXAk',
     workoutType: 'pull',
   },
   {
@@ -67,7 +67,7 @@ export const PULL_EXERCISES: Exercise[] = [
     name: 'INVERTED ROW',
     unit: 'reps',
     instruction: 'Under TRX, feet forward. Pull chest to handles, body straight. Harder angle = harder exercise.',
-    youtubeId: 'FyXAZW5zDhw',
+    youtubeId: 'hXTc1mDnZCw',
     workoutType: 'pull',
   },
 ];
@@ -79,7 +79,7 @@ export const LEGS_EXERCISES: Exercise[] = [
     name: 'BULGARIAN SPLIT SQUAT',
     unit: 'reps',
     instruction: 'Rear foot elevated on chair/couch. Lower front knee to 90°. Press back up. Do all reps, switch legs.',
-    youtubeId: 'FyXAZW5zDhw',
+    youtubeId: 'hiLF_pF3EJM',
     workoutType: 'legs',
   },
   {
@@ -87,7 +87,7 @@ export const LEGS_EXERCISES: Exercise[] = [
     name: 'PISTOL SQUAT PROGRESSION',
     unit: 'reps',
     instruction: 'One leg, hold TRX for balance. Lower slowly on one leg. Press back up. Switch legs each rep.',
-    youtubeId: 'fZjzpiOJjpg',
+    youtubeId: 'ul-yPBFwhnw',
     workoutType: 'legs',
   },
   {
@@ -95,7 +95,7 @@ export const LEGS_EXERCISES: Exercise[] = [
     name: 'TRX HAMSTRING CURL',
     unit: 'reps',
     instruction: 'Heels in TRX cradles, face up. Lift hips, curl heels to glutes. Extend legs. Keep hips up entire set.',
-    youtubeId: 'FnQYhyUzVpQ',
+    youtubeId: 'JcJ2i2gUW3o',
     workoutType: 'legs',
   },
   {
@@ -103,7 +103,7 @@ export const LEGS_EXERCISES: Exercise[] = [
     name: 'CALF RAISE',
     unit: 'reps',
     instruction: 'Stand on edge of step, hold TRX for balance. Raise up on toes. Lower heels below step. Full range.',
-    youtubeId: 'zgZ7_o5aYlw',
+    youtubeId: 'k8ipHzKeAkQ',
     workoutType: 'legs',
   },
 ];

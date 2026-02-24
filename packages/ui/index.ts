@@ -29,6 +29,7 @@ export { MobilityFlow } from './src/components/MobilityFlow';
 export { Onboarding } from './src/components/Onboarding';
 export { RestDayScreen } from './src/components/RestDayScreen';
 export type { MobilityHookState } from './src/components/RestDayScreen';
+export { QuitConfirmDialog } from './src/components/QuitConfirmDialog';
 export { RestTimer } from './src/components/RestTimer';
 export { SessionComplete } from './src/components/SessionComplete';
 export { WeeklySplit } from './src/components/WeeklySplit';

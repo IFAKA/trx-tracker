@@ -5,6 +5,7 @@ import type { CSSProperties } from 'react';
 import { Timer, SkipForward, X, Pause, Play, RotateCcw } from 'lucide-react';
 import { Button } from './ui/button';
 import { REST_DURATION } from '@traindaily/core';
+import { QuitConfirmDialog } from './QuitConfirmDialog';
 
 interface RestTimerProps {
   seconds: number;
@@ -23,35 +24,17 @@ export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, on
   const progress = ((REST_DURATION - seconds) / REST_DURATION) * 100;
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-background p-6 gap-8">
+    <div className="flex flex-col items-center justify-center h-[100dvh] bg-background p-4 sm:p-6 gap-6 sm:gap-8">
       {/* Quit */}
-      <div className="absolute top-6 left-6">
-        {showQuitConfirm ? (
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">Quit?</span>
-            <button
-              onClick={onQuit}
-              className="text-xs text-destructive hover:text-destructive/80 transition-colors font-medium"
-            >
-              Yes
-            </button>
-            <button
-              onClick={() => setShowQuitConfirm(false)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              No
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowQuitConfirm(true)}
-            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Quit workout"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
+      <div className="absolute top-4 left-4 sm:top-6 sm:left-6">
+        <button
+          type="button"
+          onClick={() => setShowQuitConfirm(true)}
+          className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Quit workout"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       <Timer className="w-8 h-8 text-muted-foreground" />
@@ -117,6 +100,12 @@ export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, on
           <SkipForward className="w-5 h-5" />
         </Button>
       </div>
+
+      <QuitConfirmDialog
+        open={showQuitConfirm}
+        onOpenChange={setShowQuitConfirm}
+        onConfirm={onQuit}
+      />
     </div>
   );
 }
