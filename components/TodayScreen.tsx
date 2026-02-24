@@ -214,6 +214,9 @@ function TodayContent({ date }: { date: Date }) {
   }
 
   if (workout.state === 'resting') {
+    const restLabel = workout.currentSet + 1 < workout.setsPerExercise
+      ? `Set ${workout.currentSet + 2} of ${workout.setsPerExercise}`
+      : workout.nextExercise?.name ? `Next · ${workout.nextExercise.name}` : undefined;
     return (
       <RestTimer
         seconds={workout.timer}
@@ -222,6 +225,7 @@ function TodayContent({ date }: { date: Date }) {
         onSkip={workout.skipTimer}
         onQuit={workout.quitWorkout}
         onUndo={workout.undoLastSet}
+        restLabel={restLabel}
       />
     );
   }

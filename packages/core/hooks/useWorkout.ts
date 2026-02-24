@@ -45,6 +45,7 @@ export interface UseWorkoutReturn {
   data: WorkoutData;
   totalExercises: number;
   nextExerciseName: string;
+  nextExercise: Exercise | undefined;
   timerPaused: boolean;
   saveError: string | null;
   restoredFromDraft: boolean;
@@ -270,7 +271,7 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
         setTimer(REST_DURATION);
         setState('resting');
       }
-    }, 700);
+    }, 600);
   }, [currentExercise, currentSet, setsPerExercise, exerciseIndex, exercises, currentTarget, audioCallbacks, saveAndComplete, storageAdapter, dateKey]);
 
   const skipTimer = useCallback(() => {
@@ -333,7 +334,7 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
 
   return {
     state, exerciseIndex, currentSet, setsPerExercise, timer, currentExercise, currentTarget,
-    previousRep, flashColor, sessionReps, weekNumber, data, totalExercises: exercises.length, nextExerciseName, timerPaused, saveError, restoredFromDraft,
+    previousRep, flashColor, sessionReps, weekNumber, data, totalExercises: exercises.length, nextExerciseName, nextExercise: exercises[exerciseIndex + 1], timerPaused, saveError, restoredFromDraft,
     startWorkout, logSet, skipTimer, quitWorkout, refreshData, finishTransition, togglePauseTimer, undoLastSet,
   };
 }

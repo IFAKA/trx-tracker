@@ -170,26 +170,33 @@ export function ExerciseScreen({
           </button>
         </div>
 
-        {/* Set dots */}
-        <div className="flex gap-2 shrink-0">
-          {Array.from({ length: setsPerExercise }).map((_, i) => (
-            <div
-              key={i === currentSet - 1 ? `dot-${i}-${currentSet}` : i}
-              className={cn(
-                'w-3 h-3 rounded-full transition-colors',
-                i < currentSet
-                  ? 'bg-foreground'
-                  : i === currentSet
-                    ? 'border-2 border-foreground'
-                    : 'border border-muted-foreground/40'
-              )}
-              style={
-                i === currentSet - 1 && currentSet > 0
-                  ? { animation: 'dot-pop 280ms ease-out' }
-                  : undefined
-              }
-            />
-          ))}
+        {/* Set dots + last set badge */}
+        <div className="flex flex-col items-center gap-1.5 shrink-0">
+          <div className="flex gap-2">
+            {Array.from({ length: setsPerExercise }).map((_, i) => (
+              <div
+                key={i === currentSet - 1 ? `dot-${i}-${currentSet}` : i}
+                className={cn(
+                  'w-3 h-3 rounded-full transition-colors',
+                  i < currentSet
+                    ? 'bg-foreground'
+                    : i === currentSet
+                      ? 'border-2 border-foreground'
+                      : 'border border-muted-foreground/40'
+                )}
+                style={
+                  i === currentSet - 1 && currentSet > 0
+                    ? { animation: 'dot-pop 280ms ease-out' }
+                    : undefined
+                }
+              />
+            ))}
+          </div>
+          {currentSet === setsPerExercise - 1 && (
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
+              Last set
+            </span>
+          )}
         </div>
 
         {/* Number wheel */}

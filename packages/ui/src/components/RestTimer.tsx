@@ -7,6 +7,8 @@ import { Button } from './ui/button';
 import { REST_DURATION } from '@traindaily/core';
 import { QuitConfirmDialog } from './QuitConfirmDialog';
 
+const UNDO_HOLD_DURATION = 600; // ms to hold before undo fires
+
 interface RestTimerProps {
   seconds: number;
   isPaused: boolean;
@@ -14,12 +16,16 @@ interface RestTimerProps {
   onSkip: () => void;
   onQuit: () => void;
   onUndo: () => void;
+  restLabel?: string;
 }
 
-export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, onUndo }: RestTimerProps) {
+export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, onUndo, restLabel }: RestTimerProps) {
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [undoProgress, setUndoProgress] = useState(0);
   const showQuitConfirmRef = useRef(false);
   const prevSeconds = useRef(seconds);
+  const undoRafRef = useRef<number | null>(null);
+  const undoStartRef = useRef<number | null>(null);
 
   // Announcement for screen readers at key moments
   const srAnnouncement = useMemo(() => {
@@ -49,6 +55,37 @@ export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, on
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Hold-to-undo logic
+  const startUndo = () => {
+    undoStartRef.current = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - (undoStartRef.current ?? Date.now());
+      const progress = Math.min(elapsed / UNDO_HOLD_DURATION, 1);
+      setUndoProgress(progress);
+      if (progress < 1) {
+        undoRafRef.current = requestAnimationFrame(tick);
+      } else {
+        undoStartRef.current = null;
+        setUndoProgress(0);
+        onUndo();
+      }
+    };
+    undoRafRef.current = requestAnimationFrame(tick);
+  };
+
+  const cancelUndo = () => {
+    if (undoRafRef.current !== null) {
+      cancelAnimationFrame(undoRafRef.current);
+      undoRafRef.current = null;
+    }
+    undoStartRef.current = null;
+    setUndoProgress(0);
+  };
+
+  // Clean up on unmount
+  useEffect(() => () => { if (undoRafRef.current !== null) cancelAnimationFrame(undoRafRef.current); }, []);
+
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   const display = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -107,17 +144,37 @@ export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, on
         </span>
       </div>
 
+      {/* Context label — tells user what's coming next */}
+      {restLabel && (
+        <p className="text-xs uppercase tracking-widest text-muted-foreground/60 -mt-2">
+          {restLabel}
+        </p>
+      )}
+
       {/* Action buttons: undo · pause · skip */}
       <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="lg"
-          onClick={onUndo}
-          className="rounded-full w-14 h-14 active:scale-95 transition-transform text-muted-foreground hover:text-foreground"
-          aria-label="Undo last set"
+        {/* Hold-to-undo button — prevents accidental taps */}
+        <button
+          type="button"
+          onPointerDown={startUndo}
+          onPointerUp={cancelUndo}
+          onPointerLeave={cancelUndo}
+          onPointerCancel={cancelUndo}
+          className="relative rounded-full w-14 h-14 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors select-none touch-none overflow-hidden"
+          aria-label="Hold to undo last set"
+          style={{ WebkitUserSelect: 'none' }}
         >
-          <RotateCcw className="w-5 h-5" />
-        </Button>
+          {/* Fill ring that grows as user holds */}
+          {undoProgress > 0 && (
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: `conic-gradient(from -90deg, oklch(0.7 0.15 250 / 35%) ${undoProgress * 360}deg, transparent 0deg)`,
+              }}
+            />
+          )}
+          <RotateCcw className="w-5 h-5 relative z-10" />
+        </button>
 
         <Button
           variant="outline"
