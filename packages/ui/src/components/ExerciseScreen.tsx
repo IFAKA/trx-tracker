@@ -8,7 +8,7 @@ import type { Exercise } from '@traindaily/core';
 import { cn } from '../lib/utils';
 import { ExerciseDemo } from './ExerciseDemo';
 import { QuitConfirmDialog } from './QuitConfirmDialog';
-import { CircularNumberPicker } from './CircularNumberPicker';
+import { NumberWheel } from './NumberWheel';
 
 interface ExerciseScreenProps {
   exercise: Exercise;
@@ -164,8 +164,8 @@ export function ExerciseScreen({
           ))}
         </div>
 
-        {/* Circular picker */}
-        <CircularNumberPicker
+        {/* Number wheel */}
+        <NumberWheel
           key={`${exerciseIndex}-${currentSet}`}
           defaultValue={currentTarget}
           max={exercise.unit === 'seconds' ? 120 : 40}
