@@ -39,7 +39,6 @@ export function ExerciseScreen({
   const [showInstruction, setShowInstruction] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const checkBtnRef = useRef<HTMLButtonElement>(null);
   const showInstructionRef = useRef(false);
   const progressPercent = (exerciseIndex / totalExercises) * 100;
 
@@ -88,7 +87,7 @@ export function ExerciseScreen({
   return (
     <div
       className={cn(
-        'flex flex-col h-[100dvh] bg-background transition-colors duration-500 overflow-y-auto',
+        'flex flex-col h-[100dvh] bg-background transition-colors duration-500 overflow-hidden',
         flashColor === 'green' && 'bg-green-950/30',
         flashColor === 'red' && 'bg-red-950/30'
       )}
@@ -125,8 +124,8 @@ export function ExerciseScreen({
         </div>
       )}
 
-      {/* Top bar - sticky so keyboard can't push it away */}
-      <div className="sticky top-0 z-10 bg-background flex items-center gap-3 p-4 pb-2 shrink-0">
+      {/* Top bar - fixed so keyboard can't push it away */}
+      <div className="fixed top-0 left-0 right-0 z-10 bg-background flex items-center gap-3 p-4 pb-2">
         <button
           type="button"
           onClick={() => setShowQuitConfirm(true)}
@@ -141,8 +140,8 @@ export function ExerciseScreen({
         </span>
       </div>
 
-      {/* Main content - scrollable, compact for keyboard */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-3 overflow-y-auto min-h-0 px-4 py-2 scroll-smooth">
+      {/* Main content */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 overflow-y-auto min-h-0 px-4 py-2 pt-14">
         {/* Exercise name + how to */}
         <div className="flex flex-col items-center gap-1.5 shrink-0">
           <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-center font-[family-name:var(--font-geist-sans)]">
@@ -207,18 +206,11 @@ export function ExerciseScreen({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            onFocus={() => {
-              // Ensure the check button stays visible when keyboard opens
-              setTimeout(() => {
-                checkBtnRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-              }, 300);
-            }}
             className="text-center text-4xl font-mono h-14 border-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             placeholder=""
             min={0}
           />
           <Button
-            ref={checkBtnRef}
             size="lg"
             onClick={handleSubmit}
             disabled={inputValue === ''}
