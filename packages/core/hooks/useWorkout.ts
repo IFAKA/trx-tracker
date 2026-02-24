@@ -43,6 +43,7 @@ export interface UseWorkoutReturn {
   sessionReps: Record<string, number[]>;
   weekNumber: number;
   data: WorkoutData;
+  totalExercises: number;
   nextExerciseName: string;
   timerPaused: boolean;
   startWorkout: () => void;
@@ -255,7 +256,7 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
 
   return {
     state, exerciseIndex, currentSet, setsPerExercise, timer, currentExercise, currentTarget,
-    previousRep, flashColor, sessionReps, weekNumber, data, nextExerciseName, timerPaused,
+    previousRep, flashColor, sessionReps, weekNumber, data, totalExercises: exercises.length, nextExerciseName, timerPaused,
     startWorkout, logSet, skipTimer, quitWorkout, refreshData, finishTransition, togglePauseTimer, undoLastSet,
   };
 }
