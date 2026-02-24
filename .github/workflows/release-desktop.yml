@@ -2,8 +2,8 @@ name: Release Desktop App
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*' # Only run on version tags
   workflow_dispatch: # Allow manual trigger
 
 concurrency:
@@ -17,15 +17,10 @@ jobs:
 
     permissions:
       contents: write # Required for creating releases
-      issues: write   # Required for semantic-release
-      pull-requests: write # Required for semantic-release
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Get full history for semantic-release
-          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -63,23 +58,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --filter @traindaily/desktop...
 
-      - name: Run semantic-release (version bump)
-        uses: cycjimmy/semantic-release-action@v4
-        id: semantic
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Resolve release version
+      - name: Resolve version
         id: version
         run: |
-          if [ -n "${{ steps.semantic.outputs.new_release_version }}" ]; then
-            echo "tag=v${{ steps.semantic.outputs.new_release_version }}" >> $GITHUB_OUTPUT
-            echo "number=${{ steps.semantic.outputs.new_release_version }}" >> $GITHUB_OUTPUT
-          else
-            VERSION=$(node -p "require('./packages/desktop/src-tauri/tauri.conf.json').version")
-            echo "tag=v$VERSION" >> $GITHUB_OUTPUT
-            echo "number=$VERSION" >> $GITHUB_OUTPUT
-          fi
+          VERSION=$(node -p "require('./packages/desktop/src-tauri/tauri.conf.json').version")
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "number=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Build Tauri app
         run: |
