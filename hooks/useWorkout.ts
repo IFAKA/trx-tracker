@@ -223,7 +223,7 @@ export function useWorkout(date: Date) {
 
   return {
     state, exerciseIndex, currentSet, setsPerExercise, timer, currentExercise, currentTarget,
-    previousRep, flashColor, sessionReps, weekNumber, data, nextExerciseName, timerPaused,
+    previousRep, flashColor, sessionReps, weekNumber, data, totalExercises: exercises.length, nextExerciseName, timerPaused,
     startWorkout, logSet, skipTimer, quitWorkout, refreshData, finishTransition, togglePauseTimer, undoLastSet,
   };
 }
