@@ -39,7 +39,14 @@ export function ExerciseScreen({
   const [showInstruction, setShowInstruction] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const checkBtnRef = useRef<HTMLButtonElement>(null);
+  const showInstructionRef = useRef(false);
   const progressPercent = (exerciseIndex / totalExercises) * 100;
+
+  // Keep ref in sync
+  useEffect(() => {
+    showInstructionRef.current = showInstruction;
+  }, [showInstruction]);
 
   useEffect(() => {
     setInputValue('');
@@ -49,20 +56,23 @@ export function ExerciseScreen({
   }, [exerciseIndex, currentSet]);
 
   // Back button: close how-to if open, otherwise show quit confirm
+  // Push state once on mount, re-push after each back press to keep trapping
   useEffect(() => {
     const handlePopState = () => {
-      if (showInstruction) {
+      if (showInstructionRef.current) {
         setShowInstruction(false);
       } else {
         setShowQuitConfirm(true);
       }
+      // Re-push so the next back press is also caught
+      window.history.pushState({ exercise: true }, '');
     };
     window.history.pushState({ exercise: true }, '');
     window.addEventListener('popstate', handlePopState);
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [showInstruction]);
+  }, []);
 
   const handleSubmit = () => {
     const val = parseInt(inputValue);
@@ -78,7 +88,7 @@ export function ExerciseScreen({
   return (
     <div
       className={cn(
-        'flex flex-col h-[100dvh] bg-background transition-colors duration-500 overflow-hidden',
+        'flex flex-col h-[100dvh] bg-background transition-colors duration-500 overflow-y-auto',
         flashColor === 'green' && 'bg-green-950/30',
         flashColor === 'red' && 'bg-red-950/30'
       )}
@@ -86,17 +96,15 @@ export function ExerciseScreen({
       {/* Fullscreen how-to overlay */}
       {showInstruction && (
         <div className="fixed inset-0 z-40 bg-background flex flex-col">
-          <div className="flex items-center gap-3 p-4">
-            <button
-              type="button"
-              onClick={() => setShowInstruction(false)}
-              className="p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              aria-label="Close how to"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
+          <button
+            type="button"
+            onClick={() => setShowInstruction(false)}
+            className="flex items-center gap-3 p-4 text-left"
+            aria-label="Close how to"
+          >
+            <ChevronLeft className="w-6 h-6 text-muted-foreground shrink-0" />
             <h2 className="text-lg font-semibold flex-1">{exercise.name}</h2>
-          </div>
+          </button>
           <div className="flex-1 flex flex-col items-center justify-center gap-6 px-4 pb-8 overflow-y-auto min-h-0">
             {exercise.youtubeId && (
               <div className="w-full max-w-sm">
@@ -117,8 +125,8 @@ export function ExerciseScreen({
         </div>
       )}
 
-      {/* Top bar */}
-      <div className="flex items-center gap-3 p-4 pb-0 shrink-0">
+      {/* Top bar - sticky so keyboard can't push it away */}
+      <div className="sticky top-0 z-10 bg-background flex items-center gap-3 p-4 pb-2 shrink-0">
         <button
           type="button"
           onClick={() => setShowQuitConfirm(true)}
@@ -134,7 +142,7 @@ export function ExerciseScreen({
       </div>
 
       {/* Main content - scrollable, compact for keyboard */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-3 overflow-y-auto min-h-0 px-4 py-2">
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 overflow-y-auto min-h-0 px-4 py-2 scroll-smooth">
         {/* Exercise name + how to */}
         <div className="flex flex-col items-center gap-1.5 shrink-0">
           <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-center font-[family-name:var(--font-geist-sans)]">
@@ -199,11 +207,18 @@ export function ExerciseScreen({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => {
+              // Ensure the check button stays visible when keyboard opens
+              setTimeout(() => {
+                checkBtnRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+              }, 300);
+            }}
             className="text-center text-4xl font-mono h-14 border-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             placeholder=""
             min={0}
           />
           <Button
+            ref={checkBtnRef}
             size="lg"
             onClick={handleSubmit}
             disabled={inputValue === ''}
