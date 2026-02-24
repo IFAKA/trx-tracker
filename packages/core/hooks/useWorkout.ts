@@ -46,6 +46,8 @@ export interface UseWorkoutReturn {
   totalExercises: number;
   nextExerciseName: string;
   timerPaused: boolean;
+  saveError: string | null;
+  restoredFromDraft: boolean;
   startWorkout: () => void;
   logSet: (value: number) => void;
   skipTimer: () => void;
@@ -69,6 +71,8 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
   const [nextExerciseName, setNextExerciseName] = useState('');
   const [firstSessionDate, setFirstSessionDate] = useState<string | null>(null);
   const [timerPaused, setTimerPaused] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [restoredFromDraft, setRestoredFromDraft] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownPlayedRef = useRef<Set<number>>(new Set());
@@ -81,12 +85,26 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([storageAdapter.loadWorkoutData(), storageAdapter.getFirstSessionDate()]).then(
-      ([loadedData, firstDate]) => {
-        if (mounted) { setData(loadedData); setFirstSessionDate(firstDate); }
+    Promise.all([
+      storageAdapter.loadWorkoutData(),
+      storageAdapter.getFirstSessionDate(),
+      storageAdapter.loadDraft?.(dateKey) ?? Promise.resolve(null),
+    ]).then(([loadedData, firstDate, draft]) => {
+      if (!mounted) return;
+      setData(loadedData);
+      setFirstSessionDate(firstDate);
+      // Restore draft if a session isn't already logged for today
+      if (draft && !loadedData[dateKey]?.logged_at) {
+        sessionRepsRef.current = draft.sessionReps;
+        setSessionReps(draft.sessionReps);
+        setExerciseIndex(draft.exerciseIndex);
+        setCurrentSet(draft.currentSet);
+        setState('exercising');
+        setRestoredFromDraft(true);
       }
-    );
+    });
     return () => { mounted = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageAdapter]);
 
   const dateKey = formatDateKey(date);
@@ -155,9 +173,16 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
     for (const ex of exercises) {
       if (reps[ex.key]) (session as Record<string, unknown>)[ex.key] = reps[ex.key];
     }
-    await storageAdapter.saveSession(dateKey, session);
-    await storageAdapter.setFirstSessionDate(dateKey);
-    setData(await storageAdapter.loadWorkoutData());
+    let saveErr: string | null = null;
+    try {
+      await storageAdapter.saveSession(dateKey, session);
+      await storageAdapter.setFirstSessionDate(dateKey);
+      setData(await storageAdapter.loadWorkoutData());
+    } catch (err) {
+      saveErr = err instanceof Error ? err.message : 'Could not save workout data';
+    }
+    await storageAdapter.clearDraft?.(dateKey);
+    setSaveError(saveErr);
     audioCallbacks.playSessionComplete?.();
     setState('complete');
     onWakeLockRelease?.();
@@ -231,6 +256,10 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
     sessionRepsRef.current = newReps;
     setSessionReps(newReps);
 
+    // Save draft after each set (best-effort, for session recovery)
+    const newSet = currentSet + 1;
+    storageAdapter.saveDraft?.(dateKey, { exerciseIndex, currentSet: newSet, sessionReps: newReps, savedAt: Date.now() });
+
     const isLastSet = currentSet + 1 >= setsPerExercise;
     const isLastExercise = exerciseIndex + 1 >= exercises.length;
 
@@ -242,7 +271,7 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
         setState('resting');
       }
     }, 700);
-  }, [currentExercise, currentSet, setsPerExercise, exerciseIndex, exercises, currentTarget, audioCallbacks, saveAndComplete]);
+  }, [currentExercise, currentSet, setsPerExercise, exerciseIndex, exercises, currentTarget, audioCallbacks, saveAndComplete, storageAdapter, dateKey]);
 
   const skipTimer = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
@@ -257,8 +286,10 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
     setExerciseIndex(0);
     setCurrentSet(0);
     setSessionReps({});
+    setRestoredFromDraft(false);
+    storageAdapter.clearDraft?.(dateKey);
     onWakeLockRelease?.();
-  }, [onWakeLockRelease]);
+  }, [onWakeLockRelease, storageAdapter, dateKey]);
 
   const togglePauseTimer = useCallback(() => {
     setTimerPaused((p) => {
@@ -302,7 +333,7 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
 
   return {
     state, exerciseIndex, currentSet, setsPerExercise, timer, currentExercise, currentTarget,
-    previousRep, flashColor, sessionReps, weekNumber, data, totalExercises: exercises.length, nextExerciseName, timerPaused,
+    previousRep, flashColor, sessionReps, weekNumber, data, totalExercises: exercises.length, nextExerciseName, timerPaused, saveError, restoredFromDraft,
     startWorkout, logSet, skipTimer, quitWorkout, refreshData, finishTransition, togglePauseTimer, undoLastSet,
   };
 }

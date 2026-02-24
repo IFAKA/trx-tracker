@@ -110,12 +110,17 @@ async function discoverByDeviceId(targetId: string, port: number, lastKnownIp: s
   return null;
 }
 
+const SYNC_TIMEOUT_MS = 15000;
+
 // Sync with desktop
 export async function syncWithDesktop(): Promise<{ success: boolean; message: string }> {
   const desktop = getStoredDesktopInfo();
   if (!desktop) {
     return { success: false, message: 'Desktop not paired' };
   }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), SYNC_TIMEOUT_MS);
 
   try {
     // Try cached IP first (fast)
@@ -129,6 +134,7 @@ export async function syncWithDesktop(): Promise<{ success: boolean; message: st
         updateCachedIp(newIp);
         desktopUrl = `http://${newIp}:${desktop.port}`;
       } else {
+        clearTimeout(timeoutId);
         return { success: false, message: 'Desktop not reachable' };
       }
     }
@@ -138,9 +144,11 @@ export async function syncWithDesktop(): Promise<{ success: boolean; message: st
       headers: {
         'Authorization': `Bearer ${desktop.authToken}`,
       },
+      signal: controller.signal,
     });
 
     if (!response.ok) {
+      clearTimeout(timeoutId);
       if (response.status === 401) {
         return { success: false, message: 'Authentication failed (unpair and re-pair)' };
       }
@@ -191,6 +199,7 @@ export async function syncWithDesktop(): Promise<{ success: boolean; message: st
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ dateKey, session }),
+            signal: controller.signal,
           });
           if (!uploadRes.ok) {
             uploadErrors.push(dateKey);
@@ -201,12 +210,18 @@ export async function syncWithDesktop(): Promise<{ success: boolean; message: st
       }
     }
 
+    clearTimeout(timeoutId);
+
     if (uploadErrors.length > 0) {
       return { success: true, message: `Synced (${uploadErrors.length} session(s) failed to upload)` };
     }
 
     return { success: true, message: 'Synced successfully' };
   } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === 'AbortError') {
+      return { success: false, message: 'Sync timed out — desktop not reachable' };
+    }
     console.error('Sync error:', err);
     return { success: false, message: 'Sync failed: network error' };
   }

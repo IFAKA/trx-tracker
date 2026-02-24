@@ -16,4 +16,6 @@ export {
   playMobilityComplete,
   playExerciseReady,
   playUndo,
+  isMuted,
+  setMuted,
 } from '@traindaily/ui';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Dumbbell, Play, CheckCircle, Smartphone, Flame, ChartBar } from 'lucide-react';
+import { Dumbbell, Play, CheckCircle, Smartphone, Flame, ChartBar, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@traindaily/ui';
 import {
   ExerciseScreen,
@@ -21,7 +21,8 @@ import { formatDisplayDate, getWeekNumber } from '@/lib/workout-utils';
 import { getFirstSessionDate } from '@/lib/storage';
 import { getWorkoutType, getTrainingStreak } from '@/lib/schedule';
 import { syncWithDesktop, getStoredDesktopInfo, clearDesktopInfo } from '@/lib/sync-client';
-import { playWentOffline, playBackOnline } from '@/lib/audio';
+import { playWentOffline, playBackOnline, isMuted, setMuted } from '@/lib/audio';
+import { WorkoutErrorBoundary } from './WorkoutErrorBoundary';
 
 const ONBOARDING_KEY = 'traindaily_onboarding_completed';
 
@@ -104,12 +105,27 @@ export function TodayScreen() {
     );
   }
 
-  return <>{offlineLine}<TodayContent date={today} /></>;
+  return <>{offlineLine}<WorkoutErrorBoundary><TodayContent date={today} /></WorkoutErrorBoundary></>;
 }
 
 function TodayContent({ date }: { date: Date }) {
   const schedule = useSchedule(date);
   const workout = useWorkout(date);
+  const [pulsing, setPulsing] = useState(true);
+  const [muted, setMutedState] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setPulsing(false), 5000);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    setMutedState(isMuted()); // eslint-disable-line react-hooks/set-state-in-effect
+  }, []);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    setMutedState(next);
+  };
   const mobility = useMobility();
   const firstSession = getFirstSessionDate();
   const weekNumber = getWeekNumber(firstSession, date);
@@ -183,6 +199,7 @@ function TodayContent({ date }: { date: Date }) {
         flashColor={workout.flashColor}
         onLogSet={workout.logSet}
         onQuit={workout.quitWorkout}
+        restoredFromDraft={workout.restoredFromDraft}
       />
     );
   }
@@ -221,6 +238,7 @@ function TodayContent({ date }: { date: Date }) {
         date={date}
         onDone={workout.quitWorkout}
         onSync={onSync}
+        saveError={workout.saveError}
       />
     );
   }
@@ -271,7 +289,7 @@ function TodayContent({ date }: { date: Date }) {
           <Button
             size="lg"
             onClick={workout.startWorkout}
-            className="rounded-full w-20 h-20 animate-pulse active:scale-95 transition-transform"
+            className={`rounded-full w-20 h-20 active:scale-95 transition-transform ${pulsing ? 'animate-pulse' : ''}`}
           >
             <Play className="w-10 h-10" />
           </Button>
@@ -305,6 +323,13 @@ function TodayContent({ date }: { date: Date }) {
           >
             <ChartBar className="w-4 h-4" />
             <span className="text-sm">History</span>
+          </button>
+          <button
+            onClick={toggleMute}
+            aria-label={muted ? 'Unmute sounds' : 'Mute sounds'}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all"
+          >
+            {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </button>
         </div>
 

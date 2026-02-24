@@ -21,6 +21,7 @@ interface ExerciseScreenProps {
   flashColor: 'green' | 'red' | null;
   onLogSet: (value: number) => void;
   onQuit: () => void;
+  restoredFromDraft?: boolean;
 }
 
 export function ExerciseScreen({
@@ -34,10 +35,27 @@ export function ExerciseScreen({
   flashColor,
   onLogSet,
   onQuit,
+  restoredFromDraft,
 }: ExerciseScreenProps) {
   const [showInstruction, setShowInstruction] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [showRestoredBanner, setShowRestoredBanner] = useState(!!restoredFromDraft);
+  const [setAnnouncement, setSetAnnouncement] = useState('');
+  const prevSet = useRef(currentSet);
   const showInstructionRef = useRef(false);
+
+  useEffect(() => {
+    if (!restoredFromDraft) return;
+    const t = setTimeout(() => setShowRestoredBanner(false), 3000);
+    return () => clearTimeout(t);
+  }, [restoredFromDraft]);
+
+  useEffect(() => {
+    if (currentSet > 0 && currentSet > prevSet.current) {
+      setSetAnnouncement(`Set ${currentSet} of ${setsPerExercise} complete`);
+    }
+    prevSet.current = currentSet;
+  }, [currentSet, setsPerExercise]);
   const progressPercent = (exerciseIndex / totalExercises) * 100;
 
   // Keep ref in sync
@@ -106,6 +124,16 @@ export function ExerciseScreen({
               Got it
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Screen reader announcements */}
+      <span className="sr-only" aria-live="assertive" aria-atomic="true">{setAnnouncement}</span>
+
+      {/* Session restored banner */}
+      {showRestoredBanner && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 rounded-full bg-muted/90 text-xs text-muted-foreground animate-in fade-in slide-in-from-top-2 duration-300">
+          Session restored
         </div>
       )}
 

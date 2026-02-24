@@ -1,3 +1,24 @@
+// Mute state persisted in localStorage
+const MUTE_KEY = 'traindaily_muted';
+
+export function isMuted(): boolean {
+  try {
+    return typeof window !== 'undefined' && localStorage.getItem(MUTE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function setMuted(value: boolean): void {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(MUTE_KEY, value ? 'true' : 'false');
+    }
+  } catch {
+    // ignore
+  }
+}
+
 // Sound engine — Web Audio API cues + haptic feedback
 // Uses a single shared AudioContext, unlocked on first user gesture
 //
@@ -39,6 +60,7 @@ function playTone(
   startDelay = 0,
   waveform: OscillatorType = 'sine'
 ): void {
+  if (isMuted()) return;
   const ctx = getContext();
   if (!ctx) return;
   try {
@@ -86,6 +108,7 @@ function playWarmNote(
 
 /** Two-note ascending — 520→780 Hz perfect fifth, rewarding */
 export function playTargetHit() {
+  if (isMuted()) return;
   const ctx = getContext();
   if (!ctx) return;
   try {
@@ -128,6 +151,7 @@ export function playTargetHit() {
 
 /** Two-note descending — 520→350 Hz, acknowledges effort, signals "not quite" */
 export function playTargetMiss() {
+  if (isMuted()) return;
   const ctx = getContext();
   if (!ctx) return;
   try {
@@ -213,6 +237,7 @@ export function playRestComplete() {
 /** Session complete — impact thump + C5→E5→G5→C6 arpeggio, delayed 100ms to
  *  align C6 peak with Trophy bounce-in overshoot at ~460ms */
 export function playSessionComplete() {
+  if (isMuted()) return;
   const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
   const ctx = getContext();
   if (!ctx) return;
@@ -291,6 +316,7 @@ export function playBreakDone() {
 
 /** Mobility complete — gentle descending G5→E5→C5 with warm attack, calming */
 export function playMobilityComplete() {
+  if (isMuted()) return;
   const ctx = getContext();
   if (!ctx) return;
   try {

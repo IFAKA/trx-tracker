@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Moon, Play, Calendar } from 'lucide-react';
 import { Button } from './ui/button';
 import { MobilityFlow } from './MobilityFlow';
@@ -31,6 +32,12 @@ interface RestDayScreenProps {
 }
 
 export function RestDayScreen({ nextTraining, weekCompleted, weekTotal, mobility }: RestDayScreenProps) {
+  const [pulsing, setPulsing] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setPulsing(false), 5000);
+    return () => clearTimeout(t);
+  }, []);
+
   if (mobility.isActive) {
     return (
       <MobilityFlow
@@ -69,7 +76,7 @@ export function RestDayScreen({ nextTraining, weekCompleted, weekTotal, mobility
       <Button
         size="lg"
         onClick={mobility.startMobility}
-        className="rounded-full w-16 h-16 animate-pulse active:scale-95 transition-transform"
+        className={`rounded-full w-16 h-16 active:scale-95 transition-transform ${pulsing ? 'animate-pulse' : ''}`}
       >
         <Play className="w-8 h-8" />
       </Button>

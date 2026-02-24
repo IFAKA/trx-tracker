@@ -51,10 +51,11 @@ interface NumberWheelProps {
   min?: number;
   max: number;
   label: string;
+  ariaLabel?: string;
   onConfirm: (value: number) => void;
 }
 
-export function NumberWheel({ defaultValue, min = 0, max, label, onConfirm }: NumberWheelProps) {
+export function NumberWheel({ defaultValue, min = 0, max, label, ariaLabel, onConfirm }: NumberWheelProps) {
   const init = Math.min(Math.max(defaultValue, min), max);
 
   // floatRef is the single source of truth for position.
@@ -221,12 +222,32 @@ export function NumberWheel({ defaultValue, min = 0, max, label, onConfirm }: Nu
 
       <div
         ref={containerRef}
-        className="relative overflow-hidden select-none touch-none cursor-ns-resize"
+        role="spinbutton"
+        tabIndex={0}
+        aria-valuenow={centerInt}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-label={ariaLabel ?? label}
+        className="relative overflow-hidden select-none touch-none cursor-ns-resize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
         style={{ height: VISIBLE * ITEM_H, width: 120 }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onKeyDown={(e) => {
+          if (editing) return;
+          if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const next = clamp(Math.round(floatRef.current) - 1);
+            cancelAnimationFrame(raf.current);
+            easeToInt(floatRef.current, next);
+          } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const next = clamp(Math.round(floatRef.current) + 1);
+            cancelAnimationFrame(raf.current);
+            easeToInt(floatRef.current, next);
+          }
+        }}
       >
         {/* Selection band */}
         <div

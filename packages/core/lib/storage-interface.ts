@@ -1,5 +1,12 @@
 import { WorkoutData, WorkoutSession } from './types';
 
+export interface WorkoutDraft {
+  exerciseIndex: number;
+  currentSet: number;
+  sessionReps: Record<string, number[]>;
+  savedAt: number;
+}
+
 export interface StorageAdapter {
   loadWorkoutData(): Promise<WorkoutData>;
   saveSession(dateKey: string, session: WorkoutSession): Promise<void>;
@@ -8,4 +15,7 @@ export interface StorageAdapter {
   getMobilityDone(dateKey: string): Promise<boolean>;
   setMobilityDone(dateKey: string): Promise<void>;
   clearAll?(): Promise<void>;
+  saveDraft?(dateKey: string, draft: WorkoutDraft): Promise<void>;
+  loadDraft?(dateKey: string): Promise<WorkoutDraft | null>;
+  clearDraft?(dateKey: string): Promise<void>;
 }

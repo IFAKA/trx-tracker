@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import type { CSSProperties } from 'react';
 import { Timer, SkipForward, X, Pause, Play, RotateCcw } from 'lucide-react';
 import { Button } from './ui/button';
@@ -19,6 +19,17 @@ interface RestTimerProps {
 export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, onUndo }: RestTimerProps) {
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const showQuitConfirmRef = useRef(false);
+  const prevSeconds = useRef(seconds);
+
+  // Announcement for screen readers at key moments
+  const srAnnouncement = useMemo(() => {
+    if (seconds === REST_DURATION) return 'Rest started';
+    if (seconds === 10) return '10 seconds remaining';
+    if (seconds === 0) return 'Rest complete';
+    return '';
+  }, [seconds]);
+
+  useEffect(() => { prevSeconds.current = seconds; }, [seconds]);
 
   useEffect(() => {
     showQuitConfirmRef.current = showQuitConfirm;
@@ -59,9 +70,15 @@ export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, on
 
       <Timer className="w-8 h-8 text-muted-foreground" />
 
+      {/* Screen reader announcement at key moments */}
+      {srAnnouncement && (
+        <span className="sr-only" aria-live="polite" aria-atomic="true">{srAnnouncement}</span>
+      )}
+
       {/* Circular timer — conic-gradient ring, compositor-accelerated via @property */}
       <div className="relative w-48 h-48 flex items-center justify-center">
         <div
+          aria-label="Rest timer progress"
           className="absolute inset-0 rounded-full"
           style={{
             '--timer-progress': progress,
@@ -74,6 +91,8 @@ export function RestTimer({ seconds, isPaused, onPauseToggle, onSkip, onQuit, on
           } as CSSProperties}
         />
         <span
+          role="timer"
+          aria-live="off"
           className={`font-mono font-bold tracking-wider transition-colors duration-300 ${
             seconds <= 3 && seconds > 0
               ? 'text-yellow-500 text-6xl'

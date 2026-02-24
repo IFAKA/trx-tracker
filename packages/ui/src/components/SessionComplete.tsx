@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Trophy, TrendingUp, TrendingDown, Minus, Calendar, Loader2, Check, WifiOff } from 'lucide-react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { Trophy, TrendingUp, TrendingDown, Minus, Calendar, Loader2, Check, WifiOff, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Progress } from './ui/progress';
 import { Button } from './ui/button';
@@ -17,22 +17,30 @@ type SessionCompleteProps =
       onDone: () => void;
       /** Optional: called to sync with desktop after session. PWA-only. */
       onSync?: () => Promise<{ success: boolean }>;
+      /** Optional: error message if session could not be saved. */
+      saveError?: string | null;
     }
   | { mode: 'mobility'; date: Date; weekCompleted: number; weekTotal: number; nextTraining: string | null; onDone: () => void };
 
 export function SessionComplete(props: SessionCompleteProps) {
   const isWorkout = props.mode === 'workout';
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'failed'>('idle');
+  const onSyncRef = useRef(isWorkout ? (props as Extract<typeof props, { mode: 'workout' }>).onSync : undefined);
+
+  const attemptSync = useCallback(async () => {
+    const onSync = onSyncRef.current;
+    if (!onSync) return;
+    setSyncStatus('syncing');
+    const { success } = await onSync();
+    setSyncStatus(success ? 'success' : 'failed');
+  }, []);
 
   // Sync with desktop after session (PWA only, when onSync is provided)
   useEffect(() => {
     if (!isWorkout) return;
     const onSync = (props as Extract<typeof props, { mode: 'workout' }>).onSync;
     if (!onSync) return;
-    setSyncStatus('syncing');
-    onSync().then(({ success }) => {
-      setSyncStatus(success ? 'success' : 'failed');
-    });
+    attemptSync();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -140,6 +148,7 @@ export function SessionComplete(props: SessionCompleteProps) {
     ));
   }
 
+  const saveError = isWorkout ? (props as Extract<typeof props, { mode: 'workout' }>).saveError : null;
   const workoutProps = isWorkout ? (props as Extract<typeof props, { mode: 'workout' }>) : null;
   const cardCount = isWorkout
     ? EXERCISES.filter((ex) => {
@@ -182,6 +191,14 @@ export function SessionComplete(props: SessionCompleteProps) {
         )}
       </div>
 
+      {/* Save error banner */}
+      {saveError && (
+        <div className="w-full max-w-sm flex items-center gap-2 px-4 py-3 rounded-xl bg-red-950/40 border border-red-800/50 text-red-400 text-sm animate-in fade-in">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>⚠ {saveError}</span>
+        </div>
+      )}
+
       {/* Summary */}
       <div className="w-full max-w-sm flex-1 min-h-0 flex flex-col gap-2">
         <div
@@ -216,13 +233,23 @@ export function SessionComplete(props: SessionCompleteProps) {
 
       {/* Sync status */}
       {syncStatus !== 'idle' && (
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div role="status" aria-live="polite" className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {syncStatus === 'syncing' && <Loader2 className="w-3 h-3 animate-spin" />}
           {syncStatus === 'success' && <Check className="w-3 h-3 text-green-500" />}
           {syncStatus === 'failed' && <WifiOff className="w-3 h-3" />}
           <span>
             {syncStatus === 'syncing' ? 'Syncing with desktop...' : syncStatus === 'success' ? 'Synced' : 'Desktop not reachable'}
           </span>
+          {syncStatus === 'failed' && (
+            <button
+              onClick={attemptSync}
+              className="flex items-center gap-1 ml-1 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Retry sync"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Retry</span>
+            </button>
+          )}
         </div>
       )}
 
