@@ -72,6 +72,10 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownPlayedRef = useRef<Set<number>>(new Set());
+  // Absolute wall-clock timestamp when the rest period ends (for background-safe timing)
+  const timerEndRef = useRef<number | null>(null);
+  // Timestamp when the timer was paused (to extend deadline on resume)
+  const timerPauseStartRef = useRef<number | null>(null);
   // Ref mirrors sessionReps so completeSession always reads the latest value
   const sessionRepsRef = useRef<Record<string, number[]>>({});
 
@@ -111,23 +115,31 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
 
   useEffect(() => {
     if (state === 'resting' && timer > 0 && !timerPaused) {
-      if (timer === REST_DURATION) countdownPlayedRef.current = new Set();
+      const speed = devTools?.timerSpeed ?? 1;
+      if (timer === REST_DURATION) {
+        // New rest period: reset countdown sounds and set absolute deadline
+        countdownPlayedRef.current = new Set();
+        timerEndRef.current = Date.now() + (REST_DURATION * 1000) / speed;
+      }
       timerRef.current = setInterval(() => {
+        const remaining = timerEndRef.current
+          ? Math.max(0, Math.ceil(((timerEndRef.current - Date.now()) * speed) / 1000))
+          : 0;
         setTimer((t) => {
-          if (t <= 1) {
+          if (remaining <= 0 || t <= 1) {
             clearInterval(timerRef.current!);
             timerRef.current = null;
             audioCallbacks.playRestComplete?.();
             advanceAfterRest();
             return 0;
           }
-          if (t - 1 <= 3 && t - 1 > 0 && !countdownPlayedRef.current.has(t - 1)) {
-            countdownPlayedRef.current.add(t - 1);
-            audioCallbacks.playCountdownTick?.(t - 1);
+          if (remaining <= 3 && !countdownPlayedRef.current.has(remaining)) {
+            countdownPlayedRef.current.add(remaining);
+            audioCallbacks.playCountdownTick?.(remaining);
           }
-          return t - 1;
+          return remaining;
         });
-      }, 1000 / (devTools?.timerSpeed ?? 1));
+      }, 1000 / speed);
       return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -170,6 +182,26 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSet, setsPerExercise, exerciseIndex, exercises, saveAndComplete]);
+
+  // Catch up timer when returning from background (setInterval is throttled by Android)
+  useEffect(() => {
+    const speed = devTools?.timerSpeed ?? 1;
+    const handleVisibilityChange = () => {
+      if (!document.hidden && state === 'resting' && !timerPaused && timerEndRef.current) {
+        const remaining = Math.max(0, Math.ceil(((timerEndRef.current - Date.now()) * speed) / 1000));
+        if (remaining <= 0) {
+          if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+          setTimer(0);
+          audioCallbacks.playRestComplete?.();
+          advanceAfterRest();
+        } else {
+          setTimer(remaining);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [state, timerPaused, advanceAfterRest, audioCallbacks, devTools?.timerSpeed]);
 
   const finishTransition = useCallback(() => {
     audioCallbacks.playExerciseReady?.();
@@ -228,7 +260,21 @@ export function useWorkout(options: UseWorkoutOptions): UseWorkoutReturn {
     onWakeLockRelease?.();
   }, [onWakeLockRelease]);
 
-  const togglePauseTimer = useCallback(() => setTimerPaused((p) => !p), []);
+  const togglePauseTimer = useCallback(() => {
+    setTimerPaused((p) => {
+      if (p) {
+        // Resuming: extend the deadline by however long we were paused
+        if (timerPauseStartRef.current !== null && timerEndRef.current !== null) {
+          timerEndRef.current += Date.now() - timerPauseStartRef.current;
+          timerPauseStartRef.current = null;
+        }
+      } else {
+        // Pausing: record when we paused
+        timerPauseStartRef.current = Date.now();
+      }
+      return !p;
+    });
+  }, []);
 
   const undoLastSet = useCallback(() => {
     if (!currentExercise) return;

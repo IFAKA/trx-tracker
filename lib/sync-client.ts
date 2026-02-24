@@ -62,9 +62,8 @@ async function tryPing(ip: string, port: number, expectedDeviceId?: string): Pro
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 1000); // 1 second timeout
 
-    const response = await fetch(`https://${ip}:${port}/api/ping`, {
+    const response = await fetch(`http://${ip}:${port}/api/ping`, {
       signal: controller.signal,
-      // @ts-ignore - required for self-signed certs
       mode: 'cors',
     });
 
@@ -120,15 +119,15 @@ export async function syncWithDesktop(): Promise<{ success: boolean; message: st
 
   try {
     // Try cached IP first (fast)
-    let desktopUrl = `https://${desktop.lastKnownIp}:${desktop.port}`;
-    let deviceId = await tryPing(desktop.lastKnownIp, desktop.port, desktop.deviceId);
+    let desktopUrl = `http://${desktop.lastKnownIp}:${desktop.port}`;
+    const deviceId = await tryPing(desktop.lastKnownIp, desktop.port, desktop.deviceId);
 
     // If cached IP failed, re-discover
     if (!deviceId) {
       const newIp = await discoverByDeviceId(desktop.deviceId, desktop.port, desktop.lastKnownIp);
       if (newIp) {
         updateCachedIp(newIp);
-        desktopUrl = `https://${newIp}:${desktop.port}`;
+        desktopUrl = `http://${newIp}:${desktop.port}`;
       } else {
         return { success: false, message: 'Desktop not reachable' };
       }
@@ -219,9 +218,8 @@ export async function verifyPairing(info: DesktopInfo): Promise<{ ok: boolean; e
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
 
-    const response = await fetch(`https://${info.lastKnownIp}:${info.port}/api/ping`, {
+    const response = await fetch(`http://${info.lastKnownIp}:${info.port}/api/ping`, {
       signal: controller.signal,
-      // @ts-ignore - required for self-signed certs
       mode: 'cors',
     });
 
