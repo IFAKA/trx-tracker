@@ -44,7 +44,7 @@ export function MobilityFlow({
   );
 
   return (
-    <div className="flex flex-col h-screen bg-background p-6 overflow-y-auto">
+    <div className="flex flex-col h-[100dvh] bg-background p-6 overflow-hidden">
       {/* Progress */}
       <div className="flex items-center gap-3 mb-2">
         <Progress value={progressPercent} className="flex-1 h-1.5" />

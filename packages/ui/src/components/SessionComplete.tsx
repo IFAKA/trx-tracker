@@ -148,7 +148,7 @@ export function SessionComplete(props: SessionCompleteProps) {
   const mobilityProps = !isWorkout ? (props as Extract<typeof props, { mode: 'mobility' }>) : null;
 
   return (
-    <div className="flex flex-col items-center h-screen bg-background p-6 gap-6 overflow-y-auto">
+    <div className="flex flex-col items-center h-[100dvh] bg-background p-6 gap-6 overflow-hidden">
       {/* Trophy */}
       <div className="flex-1 flex flex-col items-center justify-center gap-4">
         <Trophy
@@ -180,15 +180,17 @@ export function SessionComplete(props: SessionCompleteProps) {
       </div>
 
       {/* Summary */}
-      <div className="w-full max-w-sm space-y-2">
+      <div className="w-full max-w-sm min-h-0 flex flex-col gap-2">
         <div
-          className="flex items-center justify-between px-4 text-xs text-muted-foreground uppercase tracking-widest"
+          className="flex items-center justify-between px-4 text-xs text-muted-foreground uppercase tracking-widest shrink-0"
           style={{ animation: 'stagger-in 260ms ease-out 280ms backwards' }}
         >
           <span>Exercise</span>
           <span>{isWorkout ? 'Sets' : 'Duration'}</span>
         </div>
-        {cards}
+        <div className="overflow-y-auto space-y-2 min-h-0">
+          {cards}
+        </div>
       </div>
 
       {/* Week progress */}

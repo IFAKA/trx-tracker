@@ -72,9 +72,9 @@ export function HistoryScreen({ data, currentDate, onBack }: HistoryScreenProps)
   }, [data, currentDate]);
 
   return (
-    <div className="flex flex-col h-screen bg-background p-6 gap-8 overflow-y-auto">
+    <div className="flex flex-col h-[100dvh] bg-background p-6 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4 pt-2">
+      <div className="flex items-center gap-4 pt-2 shrink-0 mb-8">
         <button
           onClick={onBack}
           className="p-2 -ml-2 rounded-full hover:bg-muted active:scale-95 transition-all"
@@ -92,7 +92,7 @@ export function HistoryScreen({ data, currentDate, onBack }: HistoryScreenProps)
           <p className="text-muted-foreground text-sm">No sessions yet. Start training!</p>
         </div>
       ) : (
-        <>
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-8">
           {/* Weekly consistency chart */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -245,7 +245,7 @@ export function HistoryScreen({ data, currentDate, onBack }: HistoryScreenProps)
               </div>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

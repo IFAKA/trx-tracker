@@ -98,7 +98,7 @@ export function TodayScreen() {
     return (
       <>
         {offlineLine}
-        <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex items-center justify-center h-[100dvh] bg-background">
           <Dumbbell className="w-8 h-8 animate-pulse" />
         </div>
       </>
@@ -184,7 +184,7 @@ function TodayContent({ date }: { date: Date }) {
       : LEGS_EXERCISES;
 
     return (
-      <div className="flex flex-col h-screen overflow-hidden bg-background">
+      <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
         {/* Header */}
         <div className="flex flex-col items-center flex-shrink-0 p-6 pt-12 gap-3">
           <CheckCircle className="w-16 h-16 text-green-500" />
@@ -239,7 +239,9 @@ function TodayContent({ date }: { date: Date }) {
   if (workout.state === 'exercising') {
     return (
       <ExerciseScreen
+        exercise={workout.currentExercise!}
         exerciseIndex={workout.exerciseIndex}
+        totalExercises={workout.totalExercises}
         currentSet={workout.currentSet}
         setsPerExercise={workout.setsPerExercise}
         currentTarget={workout.currentTarget}
@@ -290,7 +292,7 @@ function TodayContent({ date }: { date: Date }) {
 
   // Idle — ready to start
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
+    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
       {/* Top content */}
       <div className="flex flex-col items-center flex-shrink-0 px-6 pt-12 pb-4 gap-5">
         <div className="flex flex-col items-center gap-3">
