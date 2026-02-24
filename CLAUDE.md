@@ -61,6 +61,11 @@ Desktop runs HTTPS server (port 8841) with self-signed TLS cert. PWA scans QR co
 
 Wake Lock (screen on during workout), Vibration (haptic feedback), Web Audio (sound cues), localStorage (persistence). All wrapped in try-catch for graceful degradation.
 
+## Workflow
+
+- After making changes: always run `npm run build` and `npm run lint`, and if everything passes, commit and `git push` automatically. Do not wait for the user to ask.
+- Before committing, always check `git status` and `git diff` for uncommitted changes in other packages (especially `packages/core/`) that the build depends on. Include them in the commit to avoid Vercel build failures.
+
 ## Conventions
 
 - All interactive components use `'use client'` directive
