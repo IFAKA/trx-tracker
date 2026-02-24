@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Trophy, TrendingUp, TrendingDown, Minus, Calendar, Loader2, Check, WifiOff } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Progress } from './ui/progress';
+import { Button } from './ui/button';
 import { EXERCISES, MOBILITY_EXERCISES, WorkoutData, formatDateKey, getTrainingDaysCompletedThisWeek } from '@traindaily/core';
 
 type SessionCompleteProps =
@@ -12,10 +13,12 @@ type SessionCompleteProps =
       sessionReps: Record<string, number[]>;
       data: WorkoutData;
       date: Date;
+      /** Called when user taps Done — resets workout state to idle. */
+      onDone: () => void;
       /** Optional: called to sync with desktop after session. PWA-only. */
       onSync?: () => Promise<{ success: boolean }>;
     }
-  | { mode: 'mobility'; date: Date; weekCompleted: number; weekTotal: number; nextTraining: string | null };
+  | { mode: 'mobility'; date: Date; weekCompleted: number; weekTotal: number; nextTraining: string | null; onDone: () => void };
 
 export function SessionComplete(props: SessionCompleteProps) {
   const isWorkout = props.mode === 'workout';
@@ -86,7 +89,7 @@ export function SessionComplete(props: SessionCompleteProps) {
       return (
         <Card
           key={ex.key}
-          className="bg-card/50"
+          className="bg-card/50 py-0"
           style={{
             animation: 'stagger-in 260ms ease-out backwards',
             animationDelay: `${500 + index * 80}ms`,
@@ -119,7 +122,7 @@ export function SessionComplete(props: SessionCompleteProps) {
     cards = MOBILITY_EXERCISES.map((ex, index) => (
       <Card
         key={ex.name}
-        className="bg-card/50"
+        className="bg-card/50 py-0"
         style={{
           animation: 'stagger-in 260ms ease-out backwards',
           animationDelay: `${500 + index * 80}ms`,
@@ -150,7 +153,7 @@ export function SessionComplete(props: SessionCompleteProps) {
   return (
     <div className="flex flex-col items-center h-[100dvh] bg-background p-6 gap-6 overflow-hidden">
       {/* Trophy */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-4">
+      <div className="flex flex-col items-center justify-center gap-4 py-2">
         <Trophy
           className="w-16 h-16 text-yellow-500"
           style={{ animation: 'bounce-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms backwards' }}
@@ -180,7 +183,7 @@ export function SessionComplete(props: SessionCompleteProps) {
       </div>
 
       {/* Summary */}
-      <div className="w-full max-w-sm min-h-0 flex flex-col gap-2">
+      <div className="w-full max-w-sm flex-1 min-h-0 flex flex-col gap-2">
         <div
           className="flex items-center justify-between px-4 text-xs text-muted-foreground uppercase tracking-widest shrink-0"
           style={{ animation: 'stagger-in 260ms ease-out 280ms backwards' }}
@@ -188,7 +191,7 @@ export function SessionComplete(props: SessionCompleteProps) {
           <span>Exercise</span>
           <span>{isWorkout ? 'Sets' : 'Duration'}</span>
         </div>
-        <div className="overflow-y-auto space-y-2 min-h-0">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
           {cards}
         </div>
       </div>
@@ -222,6 +225,18 @@ export function SessionComplete(props: SessionCompleteProps) {
           </span>
         </div>
       )}
+
+      {/* Done button */}
+      <Button
+        onClick={props.onDone}
+        className="w-full max-w-sm rounded-full active:scale-95 transition-transform shrink-0"
+        style={{
+          animation: 'stagger-in 260ms ease-out backwards',
+          animationDelay: `${600 + cardCount * 80}ms`,
+        }}
+      >
+        Done
+      </Button>
     </div>
   );
 }

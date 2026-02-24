@@ -129,7 +129,9 @@ function TodayContent({ date }: { date: Date }) {
     if (workout.state === 'exercising') {
       return (
         <ExerciseScreen
+          exercise={workout.currentExercise!}
           exerciseIndex={workout.exerciseIndex}
+          totalExercises={workout.totalExercises}
           currentSet={workout.currentSet}
           setsPerExercise={workout.setsPerExercise}
           currentTarget={workout.currentTarget}
@@ -170,6 +172,7 @@ function TodayContent({ date }: { date: Date }) {
           sessionReps={workout.sessionReps}
           data={workout.data}
           date={date}
+          onDone={workout.quitWorkout}
         />
       );
     }

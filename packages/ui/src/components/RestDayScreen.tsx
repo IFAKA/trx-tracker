@@ -56,6 +56,7 @@ export function RestDayScreen({ nextTraining, weekCompleted, weekTotal, mobility
         weekCompleted={weekCompleted}
         weekTotal={weekTotal}
         nextTraining={nextTraining}
+        onDone={mobility.quit}
       />
     );
   }

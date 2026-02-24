@@ -285,6 +285,7 @@ function TodayContent({ date }: { date: Date }) {
         sessionReps={workout.sessionReps}
         data={workout.data}
         date={date}
+        onDone={workout.quitWorkout}
         onSync={onSync}
       />
     );
