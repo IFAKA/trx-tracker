@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Dumbbell, Play, CheckCircle, Calendar, Smartphone, Flame, ChartBar } from 'lucide-react';
+import { Dumbbell, Play, CheckCircle, Smartphone, Flame, ChartBar } from 'lucide-react';
 import { Button } from '@traindaily/ui';
 import {
   ExerciseScreen,
@@ -20,7 +20,6 @@ import { useMobility } from '@/hooks/useMobility';
 import { formatDisplayDate, getWeekNumber } from '@/lib/workout-utils';
 import { getFirstSessionDate } from '@/lib/storage';
 import { getWorkoutType, getTrainingStreak } from '@/lib/schedule';
-import { PUSH_EXERCISES, PULL_EXERCISES, LEGS_EXERCISES } from '@/lib/constants';
 import { syncWithDesktop, getStoredDesktopInfo, clearDesktopInfo } from '@/lib/sync-client';
 import { playWentOffline, playBackOnline } from '@/lib/audio';
 
@@ -118,9 +117,6 @@ function TodayContent({ date }: { date: Date }) {
   const streak = getTrainingStreak(date, workout.data);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Get current day's exercises
-  const EXERCISES = workoutType === 'push' ? PUSH_EXERCISES : workoutType === 'pull' ? PULL_EXERCISES : workoutType === 'legs' ? LEGS_EXERCISES : [];
-
   // Check if desktop is paired
   const [isPaired, setIsPaired] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
@@ -170,68 +166,6 @@ function TodayContent({ date }: { date: Date }) {
         weekTotal={schedule.weekProgress.total}
         mobility={mobility}
       />
-    );
-  }
-
-  // Already done
-  if (schedule.isDone && workout.state === 'idle') {
-    const session = workout.data[schedule.dateKey];
-    const sessionWorkoutType = session?.workout_type || workoutType;
-    const completedExercises = sessionWorkoutType === 'push'
-      ? PUSH_EXERCISES
-      : sessionWorkoutType === 'pull'
-      ? PULL_EXERCISES
-      : LEGS_EXERCISES;
-
-    return (
-      <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
-        {/* Header */}
-        <div className="flex flex-col items-center flex-shrink-0 p-6 pt-12 gap-3">
-          <CheckCircle className="w-16 h-16 text-green-500" />
-          <h1 className="text-xl font-bold tracking-tight uppercase">{sessionWorkoutType} DONE</h1>
-          <p className="text-sm text-muted-foreground">{formatDisplayDate(date)}</p>
-          <div className="flex items-center justify-between text-xs text-muted-foreground/60 uppercase tracking-widest w-full max-w-xs mt-2">
-            <span>Exercise</span>
-            <span>Sets</span>
-          </div>
-        </div>
-
-        {/* Scrollable exercises list */}
-        <div className="flex-1 overflow-y-auto px-6">
-          <div className="w-full max-w-xs mx-auto space-y-1">
-            {completedExercises.map((ex) => {
-              const reps = session?.[ex.key];
-              if (!reps) return null;
-              return (
-                <div key={ex.key} className="flex justify-between text-sm">
-                  <span className="text-muted-foreground truncate font-[family-name:var(--font-geist-sans)]">{ex.name}</span>
-                  <span className="font-mono">
-                    {reps.join('·')}
-                    {ex.unit === 'seconds' ? 's' : ''}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Bottom actions */}
-        <div className="flex-shrink-0 flex flex-col items-center gap-3 p-6">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="w-4 h-4" />
-            <span className="text-sm font-mono">
-              {schedule.weekProgress.completed}/{schedule.weekProgress.total} this week
-            </span>
-          </div>
-          <button
-            onClick={() => setShowHistory(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 hover:bg-muted active:scale-95 transition-all"
-          >
-            <ChartBar className="w-4 h-4" />
-            <span className="text-sm">History</span>
-          </button>
-        </div>
-      </div>
     );
   }
 
@@ -291,16 +225,24 @@ function TodayContent({ date }: { date: Date }) {
     );
   }
 
-  // Idle — ready to start
+  // Idle — ready to start (or already done today)
+  const isDone = schedule.isDone;
   return (
     <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
       {/* Top content */}
       <div className="flex flex-col items-center flex-shrink-0 px-6 pt-12 pb-4 gap-5">
         <div className="flex flex-col items-center gap-3">
-          <Dumbbell
-            className="w-10 h-10"
-            style={{ animation: 'bounce-in 600ms ease-out backwards' }}
-          />
+          {isDone ? (
+            <CheckCircle
+              className="w-10 h-10 text-green-500"
+              style={{ animation: 'bounce-in 400ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards' }}
+            />
+          ) : (
+            <Dumbbell
+              className="w-10 h-10"
+              style={{ animation: 'bounce-in 600ms ease-out backwards' }}
+            />
+          )}
           <h1 className="text-2xl font-bold tracking-tight uppercase text-foreground">
             {workoutType === 'push' ? 'PUSH' : workoutType === 'pull' ? 'PULL' : 'LEGS'}
           </h1>
@@ -325,13 +267,15 @@ function TodayContent({ date }: { date: Date }) {
           )}
         </div>
 
-        <Button
-          size="lg"
-          onClick={workout.startWorkout}
-          className="rounded-full w-20 h-20 animate-pulse active:scale-95 transition-transform"
-        >
-          <Play className="w-10 h-10" />
-        </Button>
+        {!isDone && (
+          <Button
+            size="lg"
+            onClick={workout.startWorkout}
+            className="rounded-full w-20 h-20 animate-pulse active:scale-95 transition-transform"
+          >
+            <Play className="w-10 h-10" />
+          </Button>
+        )}
       </div>
 
       {/* Weekly Split — scrollable if needed */}
