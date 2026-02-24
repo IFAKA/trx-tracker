@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Pause, SkipForward, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
@@ -34,7 +34,27 @@ export function MobilityFlow({
   onQuit,
 }: MobilityFlowProps) {
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const showQuitConfirmRef = useRef(false);
   const progressPercent = (exerciseIndex / totalExercises) * 100;
+
+  useEffect(() => {
+    showQuitConfirmRef.current = showQuitConfirm;
+  }, [showQuitConfirm]);
+
+  // Trap back gesture: show quit confirm (or dismiss it if already open)
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showQuitConfirmRef.current) {
+        setShowQuitConfirm(false);
+      } else {
+        setShowQuitConfirm(true);
+      }
+      window.history.pushState({ mobility: true }, '');
+    };
+    window.history.pushState({ mobility: true }, '');
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const handlePlayingChange = useCallback(
     (isPlaying: boolean) => {

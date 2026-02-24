@@ -106,24 +106,6 @@ export function useMobility() {
     setSide(null);
   }, []);
 
-  // Browser back button support
-  useEffect(() => {
-    if (isActive) {
-      window.history.pushState({ mobilityActive: true }, '');
-    }
-    // Only push when becoming active, not on every re-render
-  }, [isActive]);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      if (isActive) {
-        quit();
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [isActive, quit]);
-
   const skip = useCallback(() => {
     playSkip();
     setTimer(0);
