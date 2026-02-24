@@ -188,17 +188,6 @@ export function useWorkout(date: Date) {
     releaseWakeLock();
   }, [releaseWakeLock]);
 
-  // Browser back button
-  useEffect(() => {
-    if (state !== 'idle') window.history.pushState({ workoutState: state }, '');
-  }, [state]);
-
-  useEffect(() => {
-    const handler = () => { if (state !== 'idle') quitWorkout(); };
-    window.addEventListener('popstate', handler);
-    return () => window.removeEventListener('popstate', handler);
-  }, [state, quitWorkout]);
-
   const togglePauseTimer = useCallback(() => setTimerPaused((p) => !p), []);
 
   const undoLastSet = useCallback(() => {
