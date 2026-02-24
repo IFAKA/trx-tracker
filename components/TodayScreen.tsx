@@ -128,7 +128,7 @@ function TodayContent({ date }: { date: Date }) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const desktopInfo = localStorage.getItem('traindaily_desktop_info');
-      setIsPaired(!!desktopInfo);
+      setIsPaired(!!desktopInfo); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, []);
 

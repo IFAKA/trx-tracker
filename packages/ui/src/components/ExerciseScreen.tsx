@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Target, TrendingUp, TrendingDown, Minus, Info, X, Check, ChevronLeft } from 'lucide-react';
-import { Input } from './ui/input';
+import { TrendingUp, TrendingDown, Minus, Info, X, ChevronLeft } from 'lucide-react';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import type { Exercise } from '@traindaily/core';
 import { cn } from '../lib/utils';
 import { ExerciseDemo } from './ExerciseDemo';
 import { QuitConfirmDialog } from './QuitConfirmDialog';
+import { CircularNumberPicker } from './CircularNumberPicker';
 
 interface ExerciseScreenProps {
   exercise: Exercise;
@@ -35,10 +35,8 @@ export function ExerciseScreen({
   onLogSet,
   onQuit,
 }: ExerciseScreenProps) {
-  const [inputValue, setInputValue] = useState('');
   const [showInstruction, setShowInstruction] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const showInstructionRef = useRef(false);
   const progressPercent = (exerciseIndex / totalExercises) * 100;
 
@@ -48,10 +46,8 @@ export function ExerciseScreen({
   }, [showInstruction]);
 
   useEffect(() => {
-    setInputValue('');
-    setShowInstruction(false);
+    setShowInstruction(false); // eslint-disable-line react-hooks/set-state-in-effect
     setShowQuitConfirm(false);
-    inputRef.current?.focus();
   }, [exerciseIndex, currentSet]);
 
   // Back button: close how-to if open, otherwise show quit confirm
@@ -72,17 +68,6 @@ export function ExerciseScreen({
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
-
-  const handleSubmit = () => {
-    const val = parseInt(inputValue);
-    if (isNaN(val) || val < 0) return;
-    onLogSet(val);
-    setInputValue('');
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSubmit();
-  };
 
   return (
     <div
@@ -179,46 +164,14 @@ export function ExerciseScreen({
           ))}
         </div>
 
-        {/* Target */}
-        <div className="flex flex-col items-center shrink-0">
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Target</span>
-          <div className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-muted-foreground" />
-            <span className="text-2xl font-mono font-bold text-foreground">
-              {currentTarget}
-            </span>
-            {exercise.unit === 'seconds' && (
-              <span className="text-sm text-muted-foreground">s</span>
-            )}
-          </div>
-        </div>
-
-        {/* Input */}
-        <div className="flex flex-col items-center gap-2 w-40 shrink-0">
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            {exercise.unit === 'seconds' ? 'Seconds held' : 'Reps done'}
-          </span>
-          <Input
-            ref={inputRef}
-            type="number"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="text-center text-4xl font-mono h-14 border-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            placeholder=""
-            min={0}
-          />
-          <Button
-            size="lg"
-            onClick={handleSubmit}
-            disabled={inputValue === ''}
-            className="rounded-full w-12 h-12 active:scale-95 transition-transform"
-          >
-            <Check className="w-6 h-6" />
-          </Button>
-        </div>
+        {/* Circular picker */}
+        <CircularNumberPicker
+          key={`${exerciseIndex}-${currentSet}`}
+          defaultValue={currentTarget}
+          max={exercise.unit === 'seconds' ? 120 : 40}
+          label={exercise.unit === 'seconds' ? 'Seconds held' : 'Reps done'}
+          onConfirm={onLogSet}
+        />
 
         {/* Previous performance */}
         {previousRep !== null && (
